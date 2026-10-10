@@ -1,0 +1,9 @@
+
+# config/es.yaml
+elasticsearch:
+  addresses: ["http://127.0.0.1:9200"]  # ES节点地址，支持多个
+  username: ""                          # ES 7.x开启x-pack时填写，无认证则留空
+  password: ""                          # 无认证则留空
+  timeout: 10                           # 连接/请求超时时间（秒）
+  max_retries: 3                        # 最大重试次数
+  sniff: false                          # 单节点集群建议关闭，多节点可开启

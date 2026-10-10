@@ -1,0 +1,1 @@
+set -o pipefail; GOCACHE=/tmp/go-build-cache-go-gen go test ./db/test -count=1 -v 2>&1 | grep -E '^=== RUN|^--- (PASS|FAIL)|^(PASS|FAIL)$'
