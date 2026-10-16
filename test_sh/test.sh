@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+# 运行数据库和 ES 测试，筛选输出中的用例结果与错误位置。
 set -o pipefail
 
 cd -- "$(dirname -- "$0")" || exit 1
 
+# 执行传入包的测试，并保留测试状态和源码错误行，便于查看结果。
 run_tests() {
   local packages=("$@")
   GOCACHE=/tmp/go-build-cache-go-gen go test "${packages[@]}" -count=1 -v 2>&1 |

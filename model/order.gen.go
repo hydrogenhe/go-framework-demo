@@ -4,14 +4,23 @@
 
 package model
 
+import (
+	"time"
+)
+
 const TableNameOrder = "order"
 
 // Order mapped from table <order>
 type Order struct {
-	ID      int64  `gorm:"column:id;primaryKey" json:"id"`
-	OrderNo string `gorm:"column:order_no;not null;comment:订单号" json:"order_no"` // 订单号
-	UserID  int64  `gorm:"column:user_id;not null" json:"user_id"`
-	Amount  int64  `gorm:"column:amount;not null;comment:订单金额（单位：分）" json:"amount"` // 订单金额（单位：分）
+	ID         int64     `gorm:"column:id;primaryKey" json:"id"`
+	OrderNo    string    `gorm:"column:order_no;not null;comment:订单号" json:"order_no"` // 订单号
+	UserID     int64     `gorm:"column:user_id;not null" json:"user_id"`
+	Amount     int64     `gorm:"column:amount;not null;comment:订单金额（单位：分）" json:"amount"`                                  // 订单金额（单位：分）
+	Status     int32     `gorm:"column:status;not null;default:1;comment:订单状态：1待支付，2已支付，3已完成，4已取消" json:"status"`          // 订单状态：1待支付，2已支付，3已完成，4已取消
+	CreateTime time.Time `gorm:"column:create_time;not null;default:CURRENT_TIMESTAMP(3);comment:创建时间" json:"create_time"` // 创建时间
+	ExpireTime time.Time `gorm:"column:expire_time;not null;comment:支付截止时间" json:"expire_time"`                            // 支付截止时间
+	IsDel      DeletedAt `gorm:"column:is_del;not null;comment:软删除：0正常，1已删除;softDelete:flag" json:"is_del"`                // 软删除：0正常，1已删除
+	UpdateTime time.Time `gorm:"column:update_time;not null;default:CURRENT_TIMESTAMP(3);comment:更新时间" json:"update_time"` // 更新时间
 }
 
 // TableName Order's table name

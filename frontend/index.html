@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Go Framework Demo</title>
+  <style>
+    :root{--ink:#17202a;--muted:#6b7280;--line:#e8e5df;--paper:#fffdf8;--accent:#d97745;--accent2:#f2c6a3;--bg:#f5f1ea;--ok:#2f855a}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,input,select{font:inherit}button{cursor:pointer;border:0}.shell{min-height:100vh}.top{height:70px;background:var(--paper);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 5vw}.brand{font-weight:800;letter-spacing:.04em}.brand span{color:var(--accent)}.userbar{display:flex;align-items:center;gap:14px;color:var(--muted)}
+    .auth{min-height:100vh;display:grid;place-items:center;padding:28px}.auth-card{width:min(440px,100%);background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:34px;box-shadow:0 18px 50px #6b4a2c10}.eyebrow{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.16em;text-transform:uppercase}.auth h1{margin:8px 0 10px;font-size:30px}.sub{color:var(--muted);margin:0 0 22px}.role-switch{display:grid;grid-template-columns:1fr 1fr;background:#f1ede6;padding:4px;border-radius:12px;margin:18px 0}.role-switch button{background:transparent;padding:10px;border-radius:9px;color:var(--muted)}.role-switch button.active{background:#fff;color:var(--ink);box-shadow:0 2px 8px #0000000a}.field{display:grid;gap:6px;margin:14px 0}.field label{font-size:13px;font-weight:650}.field input,.field select{border:1px solid var(--line);background:#fff;padding:11px 12px;border-radius:10px;outline:none}.field input:focus,.field select:focus{border-color:var(--accent)}.primary{width:100%;background:var(--accent);color:#fff;padding:12px;border-radius:10px;font-weight:700}.secondary{background:#f1ede6;color:var(--ink);padding:10px 14px;border-radius:9px}.link{background:none;color:var(--accent);padding:0}.hint{font-size:12px;color:var(--muted);margin-top:14px}.error{color:#b42318;font-size:13px;margin-top:8px}
+    .app{max-width:1180px;margin:0 auto;padding:34px 5vw 60px}.welcome{display:flex;align-items:end;justify-content:space-between;margin-bottom:26px}.welcome h1{margin:0;font-size:32px}.welcome p{margin:5px 0 0;color:var(--muted)}.tabs{display:flex;gap:8px;margin-bottom:22px}.tabs a{text-decoration:none;display:inline-flex;align-items:center}.tabs button,.tabs a{background:transparent;padding:10px 14px;border-radius:9px;color:var(--muted)}.tabs button.active{background:var(--ink);color:#fff}.panel{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:22px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}.product{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}.product-img{position:relative;height:145px;background:linear-gradient(135deg,#f7d4bb,#eedfd4);display:grid;place-items:center;color:#9d6a4e;font-size:38px}.product-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}.image-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px;font-size:13px}.image-placeholder[hidden]{display:none}.product-body{padding:16px;min-width:0}.product h3{margin:0 0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.price{font-size:20px;font-weight:800}.muted{color:var(--muted);font-size:13px}.stock{display:flex;justify-content:space-between;margin:12px 0;color:var(--muted);font-size:13px}.product .primary{margin-top:8px}.select-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;color:var(--muted);font-size:13px}.select-row input,.product-select{width:18px;height:18px;accent-color:var(--accent)}.batch-bar{display:flex;align-items:center;gap:14px}.batch-bar .primary{width:auto;padding:10px 16px}.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.section-head h2{margin:0;font-size:20px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px}.form-grid .wide{grid-column:1/-1}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;padding:13px 10px;border-bottom:1px solid var(--line);white-space:nowrap}.table th{font-size:12px;color:var(--muted);font-weight:700}.status{display:inline-flex;padding:4px 8px;border-radius:99px;font-size:12px;background:#f1ede6}.status.ok{background:#e4f4eb;color:var(--ok)}.empty{padding:36px;text-align:center;color:var(--muted)}.toast{position:fixed;right:22px;bottom:22px;background:var(--ink);color:#fff;padding:12px 16px;border-radius:10px;opacity:0;transform:translateY(10px);transition:.2s}.toast.show{opacity:1;transform:none}
+    .pagination{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:24px}.pagination select{padding:6px;border:1px solid var(--line);border-radius:6px}
+    .product-img>a{position:absolute;inset:0;display:grid;place-items:center;color:inherit}.product-detail-link{color:inherit;text-decoration:none}.product-detail-link:hover{color:var(--accent)}
+    @media(max-width:640px){.app{padding:25px 16px 45px}.top{padding:0 16px}.welcome{display:block}.welcome .secondary{margin-top:16px}.form-grid{grid-template-columns:1fr}.form-grid .wide{grid-column:auto}.auth-card{padding:25px}}
+  
+.product-search{grid-template-columns:repeat(4,minmax(0,1fr));padding:18px;background:#f8f6f2;border-radius:12px;margin:20px 0}.product-search label{font-size:13px}.product-search .field{margin-bottom:8px}@media(max-width:760px){.product-search{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.order-items{display:grid;gap:10px;min-width:270px}.order-item{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:8px 0}.order-item+.order-item{border-top:1px solid var(--line)}
+</style>
+</head>
+<body><div id="root"></div><div id="toast" class="toast"></div>
+<script src="product_search.js?v=20261016-4"></script>
+<script src="order_search.js?v=20261016-4"></script>
+<script src="runtime-config.js?v=20261016-4"></script>
+<script>
+const seed={users:[],products:[],orders:[]};
+const orderUserDetails=new Map();
+const db=JSON.parse(localStorage.getItem('demo-db-v2')||JSON.stringify(seed));let session=JSON.parse(localStorage.getItem('demo-session-v2')||'null'),role=new URLSearchParams(location.search).get('role')==='admin'?'admin':session?.role||'user',adminTab='products',userTab=new URLSearchParams(location.search).get('tab')==='orders'?'orders':'products';
+if(new URLSearchParams(location.search).get('tab')==='orders')adminTab='orders';
+const returnToLogs=new URLSearchParams(location.search).get('return')==='logs';if(returnToLogs&&session?.role!=='admin')session=null;
+const API_BASE=window.DEMO_API_BASE; let syncingProducts=false,productsSynced=false,selectedProducts=new Set(),productPage=1,productPageSize=20,productTotal=0,productError='';const updatingProducts=new Set();
+function newLogID(){return crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(16).slice(2)}`}
+// 订单号固定为 25 字符：OD 前缀 + 23 位安全随机十六进制字符，低于数据库30字符上限。
+function newOrderNo(){const bytes=crypto.getRandomValues(new Uint8Array(12));return 'OD'+Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('').slice(0,23)}
+// 仅清理发起请求时的会话，避免旧请求的 401 退出新登录的账号。
+function expireSession(token){
+ if(!token||session?.token!==token)return;
+ sessionChecked=false;session=null;localStorage.removeItem('demo-session-v2');resetUserOrders();selectedProducts.clear();productsSynced=false;
+ render();document.querySelector('#login-error').textContent='登录已过期，请重新登录';
+}
+async function apiFetch(path,options={}){
+ const token=session?.token;
+ const response=await fetch(API_BASE+path,{...options,method:'PUT',headers:{'X-Log-ID':newLogID(),...(token?{'Authorization':'Bearer '+token}:{}),...(options.headers||{})}});
+ if(response.status===401&&!['/api/auth/login','/api/auth/register'].includes(path.split('?')[0]))expireSession(token);
+ return response;
+}
+async function api(path,options={}){const r=await apiFetch(path,{...options,headers:{'Content-Type':'application/json',...(options.headers||{})}});const body=await r.json().catch(()=>null);if(!r.ok||body?.code!==0)throw new Error(body?.message||'响应协议无效');return body.data}
+async function syncProducts(){if(syncingProducts||productsSynced)return;syncingProducts=true;productError='';try{const result=await api('/api/products/list?'+buildProductQuery(true));db.products=result.items.map(p=>({id:p.id,name:p.name,price:p.price,stock:p.stock,image:p.image||''}));productTotal=result.total;save()}catch(err){db.products=[];productError=err.message||'商品加载失败';toast(productError)}finally{syncingProducts=false;productsSynced=true}}
+function productPagination(){const pages=Math.max(1,Math.min(Math.ceil(productTotal/productPageSize),Math.floor(10000/productPageSize)));return `<div class="pagination"><span class="muted">共 ${productTotal} 件 · 第 ${productPage} / ${pages} 页</span><label>每页 <select onchange="changeProductPage(1,Number(this.value))" ${syncingProducts?'disabled':''}>${[10,20,50,100].map(n=>`<option value="${n}" ${n===productPageSize?'selected':''}>${n} 件</option>`).join('')}</select></label><button class="secondary" ${syncingProducts||productPage<=1?'disabled':''} onclick="changeProductPage(${productPage-1})">上一页</button><button class="secondary" ${syncingProducts||productPage>=pages?'disabled':''} onclick="changeProductPage(${productPage+1})">下一页</button><button class="secondary" ${syncingProducts?'disabled':''} onclick="changeProductPage(${productPage})">刷新</button></div>${productError?`<div class="error">${esc(productError)}</div>`:!db.products.length?'<div class="empty">暂无商品</div>':''}`}
+async function changeProductPage(page,size=productPageSize){if(syncingProducts)return;productPage=page;productPageSize=size;selectedProducts.clear();productsSynced=false;const pending=syncProducts();render();await pending;if(session)render()}
+
+const save=()=>localStorage.setItem('demo-db-v2',JSON.stringify(db));const money=n=>'¥'+(n/100).toFixed(2);const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+function toast(t){const el=document.querySelector('#toast');el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200)}
+let sessionChecked=false,checkingSession=false;
+async function checkSession(){
+ if(checkingSession||!session)return;
+ checkingSession=true;const token=session.token;
+ try{
+  const user=await api('/api/auth/session');
+  if(session?.token!==token)return;
+  session={...session,...user};localStorage.setItem('demo-session-v2',JSON.stringify(session));sessionChecked=true;render();
+ }catch(err){
+  if(session?.token===token){document.querySelector('#root').innerHTML='<div class="auth"><div class="auth-card"><p>登录状态校验失败：'+esc(err.message)+'</p><button onclick="checkSession()">重试</button></div></div>'}
+ }finally{checkingSession=false}
+}
+function render(){
+ if(!session){renderAuth();return}
+ if(!sessionChecked){document.querySelector('#root').innerHTML='<div class="auth">正在校验登录状态…</div>';checkSession();return}
+ renderApp();
+}
+function saveSession(user){sessionChecked=true;resetUserOrders();orderStatusTab=1;orderPage=1;orderFilters={sort:'updated_desc',price_min:'',price_max:'',created_from:'',created_to:'',user_id:''};session={...user};localStorage.setItem('demo-session-v2',JSON.stringify(session))}
+function setRole(nextRole){role=nextRole;renderAuth()}
+function renderAuth(){document.querySelector('#root').innerHTML=`<div class="auth"><div class="auth-card"><div class="eyebrow">Go Framework Demo</div><h1>欢迎回来</h1><p class="sub">先选择入口，再登录你的工作台。</p><div class="role-switch"><button type="button" class="${role==='user'?'active':''}" onclick="setRole('user')">用户</button><button type="button" class="${role==='admin'?'active':''}" onclick="setRole('admin')">管理员</button></div><form onsubmit="login(event)"><div class="field"><label>邮箱</label><input id="login-email" type="email" value="${role==='admin'?'361861860@qq.com':''}" placeholder="name@example.com" required></div><div class="field"><label>密码</label><input id="login-password" type="password" placeholder="请输入密码" required></div><button class="primary">登录${role==='admin'?'管理端':'用户端'}</button><div id="login-error" class="error"></div></form><p class="hint">管理员邮箱：361861860@qq.com；普通用户请先注册</p><p style="margin:20px 0 0;text-align:center">还没有账号？ <button class="link" onclick="showRegister()">注册用户</button></p></div></div>`}
+function showRegister(){document.querySelector('#root').innerHTML=`<div class="auth"><div class="auth-card"><div class="eyebrow">Create account</div><h1>注册用户</h1><p class="sub">注册后可以浏览商品并创建订单。</p><form onsubmit="register(event)"><div class="field"><label>姓名</label><input id="r-name" required></div><div class="field"><label>邮箱</label><input id="r-email" type="email" required></div><div class="field"><label>年龄</label><input id="r-age" type="number" min="1" value="18" required></div><div class="field"><label>密码</label><input id="r-password" type="password" minlength="6" maxlength="18" required></div><button class="primary">注册并登录</button></form><p style="margin:20px 0 0;text-align:center"><button class="link" onclick="renderAuth()">返回登录</button></p></div></div>`}
+async function login(e){e.preventDefault();const email=document.querySelector('#login-email').value.trim(),pwd=document.querySelector('#login-password').value;try{const u=await api('/api/auth/login',{method:'PUT',body:JSON.stringify({email,password:pwd})});if(role==='admin'&&u.role!=='admin')throw new Error('管理员账号不匹配');saveSession(u);if(returnToLogs&&u.role==='admin'){location.replace('logs.html');return}render()}catch(err){document.querySelector('#login-error').textContent=err.message||'登录失败'}}
+async function register(e){e.preventDefault();const name=document.querySelector('#r-name').value.trim(),email=document.querySelector('#r-email').value.trim(),age=Number(document.querySelector('#r-age').value),password=document.querySelector('#r-password').value,body={name,age,email,password};try{const u=await api('/api/auth/register',{method:'PUT',body:JSON.stringify(body)});saveSession(u);return render()}catch(err){toast('注册失败：'+(err.message||'服务器错误'))}}
+async function logout(){try{await api('/api/auth/logout',{method:'PUT'})}catch(_){}sessionChecked=false;session=null;resetUserOrders();localStorage.removeItem('demo-session-v2');render()}
+function renderApp(){const isAdmin=session.role==='admin';document.querySelector('#root').innerHTML=`<div class="shell"><header class="top"><div class="brand">go<span>shop</span></div><div class="userbar">${esc(session.name)} · ${isAdmin?'管理员':'用户'} <button class="secondary" onclick="logout()">退出</button></div></header><main class="app"><div class="welcome"><div><div class="eyebrow">${isAdmin?'Admin workspace':'Personal workspace'}</div><h1>${isAdmin?'管理工作台':'你好，'+esc(session.name)}</h1><p>${isAdmin?'维护商品价格、图片和库存，并处理订单发货状态。':'浏览商品、创建订单并跟踪订单状态。'}</p></div></div>${isAdmin?adminView():userView()}</main></div>`;if((isAdmin?adminTab:userTab)==='orders'&&!ordersLoaded&&!loadingOrders)syncUserOrders();if(!syncingProducts&&!productsSynced)syncProducts().then(()=>{if(session)render()})}
+function tabs(items,current,fn,links=[]){return `<div class="tabs">${items.map(x=>`<button class="${current===x[0]?'active':''}" onclick="switchTab('${fn}','${x[0]}')">${x[1]}</button>`).join('')}${links.map(x=>`<a href="${esc(x.href)}">${esc(x.label)}</a>`).join('')}</div>`}
+function adminView(){return tabs([['products','商品管理'],['orders','用户订单']],adminTab,'adminTab',[{href:'logs.html',label:'日志查询'}])+(adminTab==='products'?adminProducts():adminOrders())}
+function adminProducts(){return `<section class="panel"><div class="section-head"><h2>商品</h2><div style="display:flex;gap:14px;align-items:center"><span class="muted">${productTotal} 个商品</span><button class="secondary" onclick="exportProducts()" ${exportingProducts?'disabled':''}>${exportingProducts?'导出中…':'导出 Excel'}</button></div></div><form onsubmit="addProduct(event)" class="form-grid" style="margin-bottom:26px"><div class="field"><label>商品名称</label><input id="p-name" required placeholder="例如：轻量咖啡杯"></div><div class="field"><label>价格（元）</label><input id="p-price" type="number" min="0.01" max="1000000" step="0.01" required placeholder="68.00"></div><div class="field"><label>库存</label><input id="p-stock" type="number" min="0" max="1000000" step="1" required placeholder="20"></div><div class="field"><label>商品图片（可选，JPEG / PNG，最多 5MB）</label><input id="p-image" type="file" accept="image/jpeg,image/png"></div><div class="wide"><button class="primary" style="width:auto;padding:10px 20px">添加商品</button></div></form>${productSearchForm()}<div class="grid">${db.products.map(productCardAdmin).join('')}</div>${productPagination()}</section>`}
+function productImage(p){return `<span class="image-placeholder"><svg width="42" height="42" viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="5" y="8" width="38" height="32" rx="5" stroke="currentColor" stroke-width="2"/><circle cx="16" cy="18" r="3" stroke="currentColor" stroke-width="2"/><path d="m8 35 10-10 8 8 7-7 8 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${p.image?'图片加载中':'暂无图片'}</span></span>${p.image?`<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" onload="this.previousElementSibling.hidden=true" onerror="this.previousElementSibling.hidden=false;this.previousElementSibling.lastElementChild.textContent='图片暂不可用';this.remove()">`:''}`}
+function productDetailHref(id){return 'product_detail.html?id='+encodeURIComponent(id)}
+function productDetailImage(p){return `<a href="${productDetailHref(p.id)}" aria-label="查看${esc(p.name)}详情">${productImage(p)}</a>`}
+function productCardAdmin(p){return `<article class="product"><div class="product-img">${productDetailImage(p)}</div><div class="product-body"><h3 title="${esc(p.name)}"><a class="product-detail-link" href="${productDetailHref(p.id)}">${esc(p.name)}</a></h3><div class="price">${money(p.price)}</div><div class="stock"><span>库存 ${p.stock}</span><button class="link" ${updatingProducts.has(p.id)?'disabled':''} onclick="restock('${p.id}')">调整库存</button></div><div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:16px"><button class="link" ${updatingProducts.has(p.id)?'disabled':''} onclick="changeProductPrice('${p.id}')">修改价格</button><button class="link" ${updatingProducts.has(p.id)?'disabled':''} onclick="document.getElementById('edit-image-${p.id}').click()">修改图片</button><input id="edit-image-${p.id}" type="file" accept="image/jpeg,image/png" hidden onchange="changeProductImage('${p.id}',this)">${updatingProducts.has(p.id)?'<span class="muted" role="status">保存中…</span>':''}</div></div></article>`}
+function adminOrders(){return orderPanel(true)}
+function userView(){return tabs([['products','商品中心'],['orders','我的订单']],userTab,'userTab')+(userTab==='products'?userProducts():userOrders())}
+function userProducts(){const available=db.products.filter(p=>p.stock>0),selected=available.filter(p=>selectedProducts.has(p.id));return `<section class="panel"><div class="section-head"><h2>商品中心</h2><div class="batch-bar"><span class="muted">已选 ${selected.length} 件</span><button class="primary" ${selected.length?'':'disabled'} onclick="createSelectedOrder()">生成订单</button></div></div><div class="select-row"><input type="checkbox" ${selected.length===available.length&&available.length?'checked':''} onchange="toggleAllProducts(this.checked)"><span>全选本页可购买商品</span></div>${productSearchForm()}<div class="grid">${db.products.map(p=>`<article class="product"><div class="product-img">${productDetailImage(p)}</div><div class="product-body"><label class="select-row"><input class="product-select" type="checkbox" ${selectedProducts.has(p.id)?'checked':''} ${p.stock<1?'disabled':''} onchange="toggleProduct('${p.id}',this.checked)"><span>选择商品</span></label><h3 title="${esc(p.name)}"><a class="product-detail-link" href="${productDetailHref(p.id)}">${esc(p.name)}</a></h3><div class="price">${money(p.price)}</div><div class="stock"><span>${p.stock>0?'库存 '+p.stock:'暂时缺货'}</span></div><button class="primary" ${p.stock<1?'disabled':''} onclick="createOrder('${p.id}')">立即下单</button></div></article>`).join('')}</div>${productPagination()}</section>`}
+// 订单列表只使用当前会话的接口结果，不使用 localStorage 中的旧订单。
+let userOrderRows=[],loadingOrders=false,ordersLoaded=false,ordersError='',ordersRequest=0;
+function resetUserOrders(){orderUserDetails.clear();ordersRequest++;userOrderRows=[];loadingOrders=false;ordersLoaded=false;ordersError='';orderTotal=0}
+function switchTab(target,value){
+  if(target==='adminTab'){adminTab=value;if(value==='orders'){orderPage=1;resetUserOrders()}}
+  else if(target==='userTab'){userTab=value;if(value==='orders'){orderPage=1;resetUserOrders()}}
+  if(value==='products')productsSynced=false;
+  render();
+}
+async function syncUserOrders(){
+  if(!session||loadingOrders)return;
+  const request=++ordersRequest,token=session.token,userId=String(session.id);
+  loadingOrders=true;ordersLoaded=false;ordersError='';userOrderRows=[];render();
+  try{
+    const admin=session.role==='admin';
+    const path=admin?'/api/admin/orders/list':'/api/orders/list';
+    const result=await api(path+'?'+buildOrderQuery(admin?orderFilters.user_id:userId));
+    if(request!==ordersRequest||session?.token!==token)return;
+    if(!Array.isArray(result?.items)||!Number.isFinite(result.total))throw new Error('订单响应格式不正确');
+    orderTotal=result.total;
+    userOrderRows=result.items.map(o=>({...o,id:String(o.id),userId:String(o.user_id),orderNo:o.order_no,items:Array.isArray(o.items)?o.items:null}));
+  }catch(err){
+    if(request!==ordersRequest||session?.token!==token)return;
+    ordersError=err.message||'订单加载失败';
+  }finally{
+    if(request===ordersRequest&&session?.token===token){loadingOrders=false;ordersLoaded=true;render()}
+  }
+}
+function refreshUserOrders(){resetUserOrders();return syncUserOrders()}
+function userOrders(){return orderPanel(false)}
+function orderPanel(admin){
+  const orders=userOrderRows.filter(o=>(admin||o.userId===String(session.id))&&o.status===orderStatusTab);
+  const count=loadingOrders||!ordersLoaded?'加载中…':ordersError?'加载失败':`${orderTotal} 笔订单`;
+  const head=`<section class="panel"><div class="section-head"><h2>${admin?'用户订单':'我的订单'}</h2><div><span class="muted">${count}</span> <button class="secondary" onclick="refreshUserOrders()" ${loadingOrders?'disabled':''}>刷新</button></div></div>${orderSearchForm()}${orderStatusTabs()}<div id="order-results" role="tabpanel" aria-labelledby="order-status-${orderStatusTab}">`;
+  if(loadingOrders||!ordersLoaded)return head+'<div class="empty" role="status">正在加载订单…</div></div></section>';
+  if(ordersError)return head+`<div class="error" role="alert">订单加载失败：${esc(ordersError)}，请点击刷新重试。</div></div></section>`;
+  if(!orders.length)return head+`<div class="empty">暂无符合条件的${orderStatus(orderStatusTab)}订单</div></div>${orderPagination()}</section>`;
+  return head+`<div class="table-wrap"><table class="table"><thead><tr><th>订单号</th>${admin?'<th>用户ID</th>':''}<th>创建时间</th><th>支付截止时间</th><th>金额</th><th>订单状态</th><th>订单明细 / 发货状态</th>${admin?'':'<th>操作</th>'}</tr></thead><tbody>${orders.map(o=>`<tr><td>${esc(o.orderNo)}</td>${admin?`<td>${orderUserDetail(o)}</td>`:''}<td>${esc(orderCreatedTime(o))}</td><td>${o.status===1?orderExpireTime(o):'—'}</td><td>${money(o.amount)}</td><td><span class="status">${orderStatus(o.status)}</span></td><td>${orderItemDetails(o)}</td>${admin?'':`<td>${orderActions(o)}</td>`}</tr>`).join('')}</tbody></table></div></div>${orderPagination()}</section>`;
+}
+function orderShippingStatus(order){
+  if(!order.items?.length)return '<span class="muted">暂无明细状态</span>';
+  const shipped=order.items.every(item=>item.status===2);
+  return `<span class="status ${shipped?'ok':''}">${shipped?'已发货':'待发货'}</span>`;
+}
+async function uploadProductImage(file){if(file.size>5*1024*1024)throw new Error('图片不能超过5MB');if(!['image/jpeg','image/png'].includes(file.type))throw new Error('只支持JPEG、PNG图片');const form=new FormData();form.append('file',file);const r=await apiFetch('/api/products/image',{body:form});const body=await r.json().catch(()=>null);if(!r.ok||body?.code!==0)throw new Error(body?.message||'图片上传失败');return body.data.image}
+async function addProduct(e){e.preventDefault();const button=e.submitter||e.target.querySelector('button');if(button.disabled)return;button.disabled=true;let created=false;try{const name=document.querySelector('#p-name').value.trim(),price=Math.round(Number(document.querySelector('#p-price').value)*100),stock=Number(document.querySelector('#p-stock').value),file=document.querySelector('#p-image').files[0],image=file?await uploadProductImage(file):'',body={name,price,stock,image};await api('/api/products',{body:JSON.stringify(body)});created=true;toast('商品已添加，1秒后刷新');setTimeout(()=>window.location.reload(),1000)}catch(err){toast('添加商品失败：'+err.message)}finally{if(!created)button.disabled=false}}
+// 商品更新成功后使用接口返回值更新卡片，避免立即查询到尚未同步的旧数据。
+// 部分更新只提交非 null/undefined 的可修改字段，0 和空字符串必须保留。
+/** @param {{name?:string,price?:number,stock?:number,image?:string}} fields */
+function productUpdatePayload(fields){const payload={};for(const key of ['name','price','stock','image']){if(fields[key]!==undefined&&fields[key]!==null)payload[key]=fields[key]}if(!Object.keys(payload).length)throw new Error('请指定要修改的商品字段');return payload}
+async function saveProductEdit(id,makeData,message){if(updatingProducts.has(id))return;updatingProducts.add(id);render();try{const data=productUpdatePayload(await makeData()),updated=await api('/api/products/'+id,{body:JSON.stringify(data)}),product=db.products.find(p=>p.id===id);if(product)Object.assign(product,{name:updated.name,price:updated.price,stock:updated.stock,image:updated.image||''});save();toast(message)}catch(err){toast('商品修改失败：'+err.message)}finally{updatingProducts.delete(id);render()}}
+function changeProductPrice(id){const product=db.products.find(p=>p.id===id);if(!product||updatingProducts.has(id))return;const value=prompt('请输入新的价格（元，0.01–1000000，最多两位小数）',(product.price/100).toFixed(2));if(value===null)return;const text=value.trim();if(!/^\d+(\.\d{1,2})?$/.test(text)){toast('请输入最多两位小数的价格');return}const [whole,fraction='']=text.split('.'),price=Number(whole)*100+Number(fraction.padEnd(2,'0'));if(!Number.isSafeInteger(price)||price<1||price>100000000){toast('价格必须为0.01–1000000元');return}return saveProductEdit(id,async()=>({price}),'价格已更新')}
+function changeProductImage(id,input){const file=input.files[0];input.value='';if(!file)return;return saveProductEdit(id,async()=>({image:await uploadProductImage(file)}),'图片已更新')}
+async function restock(id){const p=db.products.find(x=>x.id===id);if(!p||updatingProducts.has(id))return;const value=prompt('请输入新的库存数量（0-1000000）',p.stock);if(value===null)return;const stock=Number(value);if(!Number.isInteger(stock)||stock<0||stock>1000000){toast('库存必须为0-1000000的整数');return}return saveProductEdit(id,async()=>({stock}),'库存已更新')}
+function showCreatedOrderAfterSync(token){
+ setTimeout(()=>{
+  if(!token||session?.token!==token)return;
+  orderStatusTab=1;switchTab('userTab','orders');
+ },1000);
+}
+async function createOrder(productId){const p=db.products.find(x=>x.id===productId);if(!p||p.stock<1)return;const body={order_no:newOrderNo(),user_id:session.id,items:[{product_id:p.id,product_version:p.version,quantity:1,unit_price_fen:p.price,name:p.name,image:p.image,stock:p.stock}]};const token=session?.token;try{await api('/api/orders',{method:'PUT',body:JSON.stringify(body)});if(session?.token!==token)return;p.stock-=1;save();toast('订单创建成功，1秒后查看订单');showCreatedOrderAfterSync(token)}catch(err){toast('订单创建失败：'+err.message)}}
+function toggleProduct(id,checked){checked?selectedProducts.add(id):selectedProducts.delete(id);render()}
+function toggleAllProducts(checked){db.products.filter(p=>p.stock>0).forEach(p=>checked?selectedProducts.add(p.id):selectedProducts.delete(p.id));render()}
+async function createSelectedOrder(){const products=db.products.filter(p=>selectedProducts.has(p.id)&&p.stock>0),items=products.map(p=>({product_id:p.id,product_version:p.version,quantity:1,unit_price_fen:p.price,name:p.name,image:p.image,stock:p.stock}));if(!items.length)return;const body={order_no:newOrderNo(),user_id:session.id,items};const token=session?.token;try{await api('/api/orders',{method:'PUT',body:JSON.stringify(body)});if(session?.token!==token)return;products.forEach(p=>p.stock-=1);save();selectedProducts.clear();toast('批量订单创建成功，1秒后查看订单');showCreatedOrderAfterSync(token)}catch(err){toast('批量订单创建失败：'+err.message)}}
+
+function orderStatus(s){return s===1?'待支付':s===2?'已支付':s===3?'已完成':'已取消'}
+render();
+</script></body></html>

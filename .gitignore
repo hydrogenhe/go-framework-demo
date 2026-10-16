@@ -25,8 +25,19 @@ coverage.html
 
 # Logs and temporary files
 *.log
+logs/
 tmp/
 temp/
 
 # macOS
 .DS_Store
+
+# Image component data and credentials
+component/Image_component/data/
+components_sh/Internet/stack/.env
+
+# Runtime configuration generated from conf/app.yaml
+frontend/runtime-config.js
+
+# Deployment package output
+dist/

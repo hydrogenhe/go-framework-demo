@@ -3,77 +3,82 @@ package mysql
 import (
 	"errors"
 	"fmt"
-	"log"
+	"go-framework-demo/util"
+	"gopkg.in/yaml.v3"
+	"os"
+	"strconv"
 	"sync"
 
 	"go-framework-demo/query" // 导入gen生成的query包
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 // MySQLConfig MySQL 连接配置结构体（保留写法，内部赋值）
-type MySQLConfig struct {
-	Host     string // 数据库地址
-	Port     string // 端口
-	User     string // 用户名
-	Password string // 密码
-	DBName   string // 数据库名
-	Charset  string // 字符集
-}
+type MySQLConfig = util.MySQLConfig
 
 // 单例模式：确保全局只有一个 DB 实例 + gen 只初始化一次
 var (
-	genQuery  *query.Query // 替换原 DB/SetDefault 相关
-	once      sync.Once
-	db        *gorm.DB
-	dbErr     error
-	genInited bool // 标记gen是否已初始化
-	// 内部写死配置：初始化时自动赋值给 MySQLConfig
-	defaultConfig = MySQLConfig{
-		Host:     "127.0.0.1", // 固定地址
-		Port:     "3306",      // 固定端口
-		User:     "root",      // 固定用户名
-		Password: "12345678",  // 你的 MySQL 密码（仅需修改这里！）
-		DBName:   "demo_db",   // 你的数据库名（仅需修改这里！）
-		Charset:  "utf8mb4",   // 固定字符集
-	}
+	genQuery      *query.Query // 替换原 DB/SetDefault 相关
+	once          sync.Once
+	db            *gorm.DB
+	dbErr         error
+	genInited     bool // 标记gen是否已初始化
+	defaultConfig MySQLConfig
 )
 
 // InitMySQL 初始化 MySQL + 初始化 GORM Gen 查询器（统一入口）
 
-func InitMySQL() {
+func InitMySQL(configs ...MySQLConfig) error {
 	once.Do(func() {
-		// 1. 校验配置
-		if defaultConfig.Password == "" {
-			log.Fatal("MySQL 初始化失败：密码未配置，请修改 defaultConfig 中的 Password 字段")
+		if len(configs) > 0 {
+			defaultConfig = configs[0]
+		} else {
+			configPath, err := util.ConfigFile("mysql.yaml")
+			if err != nil {
+				dbErr = err
+				return
+			}
+			data, err := os.ReadFile(configPath)
+			if err != nil {
+				dbErr = err
+				return
+			}
+			var fileConfig struct {
+				MySQL MySQLConfig `yaml:"mysql"`
+			}
+			if err = yaml.Unmarshal(data, &fileConfig); err != nil {
+				dbErr = fmt.Errorf("解析 MySQL 配置失败: %w", err)
+				return
+			}
+			defaultConfig = fileConfig.MySQL
 		}
-		if defaultConfig.DBName == "" {
-			log.Fatal("MySQL 初始化失败：数据库名未配置，请修改 defaultConfig 中的 DBName 字段")
+		if defaultConfig.Host == "" || defaultConfig.Port == "" || defaultConfig.User == "" || defaultConfig.Password == "" || defaultConfig.DBName == "" {
+			dbErr = errors.New("MySQL 配置必须提供 host、port、user、password 和 database")
+			return
 		}
-
-		// 2. 构建 DSN 并连接 MySQL
-		dsn := fmt.Sprintf(
-			"%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=True&loc=Local",
-			defaultConfig.User, defaultConfig.Password,
-			defaultConfig.Host, defaultConfig.Port,
-			defaultConfig.DBName, defaultConfig.Charset,
-		)
-		var err error
-		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Info),
-		})
-		if err != nil {
-			log.Fatalf("MySQL 连接失败：%v", err) // 直接终止
+		if _, err := strconv.Atoi(defaultConfig.Port); err != nil {
+			dbErr = fmt.Errorf("MySQL port 无效: %w", err)
+			return
 		}
-
-		// 3. 初始化 Gen 查询器
+		if defaultConfig.Charset == "" {
+			defaultConfig.Charset = "utf8mb4"
+		}
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=True&loc=Local", defaultConfig.User, defaultConfig.Password, defaultConfig.Host, defaultConfig.Port, defaultConfig.DBName, defaultConfig.Charset)
+		gormConfig := &gorm.Config{Logger: newZapGormLogger(gormlogger.Info)}
+		db, dbErr = gorm.Open(mysql.Open(dsn), gormConfig)
+		if dbErr != nil {
+			dbErr = fmt.Errorf("连接 MySQL 失败: %w", dbErr)
+			return
+		}
 		initGen(db)
 		if !genInited || genQuery == nil {
-			log.Fatal("Gen 查询器初始化失败")
+			dbErr = errors.New("Gen 查询器初始化失败")
 		}
 	})
+	return dbErr
 }
 
 // initGen 初始化 GORM Gen 查询器（内部方法）

@@ -7,7 +7,7 @@ const (
 	RocketMQDelayLevel2 = 2
 	// RocketMQDelayLevel3 延时级别3 → 10秒
 	RocketMQDelayLevel3 = 3
-	// RocketMQDelayLevel4 延时级别4 → 30秒（最接近22秒需求）
+	// RocketMQDelayLevel4 延时级别4 → 30秒
 	RocketMQDelayLevel4 = 4
 	// RocketMQDelayLevel5 延时级别5 → 1分钟
 	RocketMQDelayLevel5 = 5
@@ -37,4 +37,6 @@ const (
 	RocketMQDelayLevel17 = 17
 	// RocketMQDelayLevel18 延时级别18 → 2小时
 	RocketMQDelayLevel18 = 18
+	// OrderExpirationDelayLevel 保留默认10分钟级别；实际订单检查按目标时间动态选择级别。
+	OrderExpirationDelayLevel = RocketMQDelayLevel14
 )

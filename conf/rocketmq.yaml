@@ -1,7 +1,7 @@
 # RocketMQ公共配置
 common:
   name_srv_addr: "127.0.0.1:9876"  # NameServer地址
-  broker_addr: "127.0.0.1:10999"   #broker地址
+  broker_addr: "127.0.0.1:10911"   #broker地址
   default_retry_times: 1           # 默认重试次数
   default_max_send_qps: 100        # 默认QPS
   default_send_timeout: 3000       # 默认超时（毫秒）
@@ -18,16 +18,24 @@ businesses:
     # 多消费者配置（数组）- 原有格式保留
     consumers:
       - consumer_group: "user_consumer_group_info"  # 消费者组1：用户信息变动
-        consume_handler: "user_info_change"          # 回调标识1
-        message_model: "broadcasting"                # 广播模式
+        message_model: "clustering"                # 广播模式
         thread_nums: 5                                # 消费线程数（可选）
         instance_count: 1  # 新增：启动3个实例（核心配置）
 
       - consumer_group: "user_consumer_group_notify" # 消费者组2：用户通知推送
-        consume_handler: "user_notify_push"          # 回调标识2
         message_model: "clustering"                # 广播模式
         thread_nums: 3                                # 消费线程数（可选）
         instance_count: 1  # 新增：启动3个实例（核心配置）
+
+  # Canal 用户数据变更事件与用户业务消息使用独立链路。
+  - biz_name: "user_cdc"
+    topic: "user_cdc_topic"
+    producer_group: "user_cdc_producer_group"
+    consumers:
+      - consumer_group: "user_es_consumer_group"
+        message_model: "clustering"
+        thread_nums: 5
+        instance_count: 1
 
   - biz_name: "order"
     topic: "order_topic"
@@ -35,12 +43,24 @@ businesses:
     retry_times: 3
     max_send_qps: 500
     send_timeout: 5000
-    # 改为多消费者数组格式（核心修改）
+    # 业务订单消费者，保留业务职责
     consumers:
-      - consumer_group: "order_consumer_group"       # 原单字段consumer_group移到数组内
-        consume_handler: "order"                      # 原单字段consume_handler移到数组内
-        message_model: "clustering"                  # 原单字段message_model移到数组内
-        thread_nums: 8                                # 补充可选的消费线程数（可根据需求调整）
+      - consumer_group: "order_consumer_group"
+        message_model: "clustering"
+        thread_nums: 8
+        consume_orderly: true
+
+  # 订单 CDC 专用链路：Canal → order_cdc_topic → Elasticsearch。
+  - biz_name: "order_cdc"
+    topic: "order_cdc_topic"
+    producer_group: "order_cdc_producer_group"
+    retry_times: 1
+    max_send_qps: 2000
+    send_timeout: 2000
+    consumers:
+      - consumer_group: "order_es_consumer_group"
+        message_model: "clustering"
+        thread_nums: 10
 
   - biz_name: "product"
     topic: "product_topic"
@@ -49,8 +69,17 @@ businesses:
     max_send_qps: 2000
     send_timeout: 2000
     # 改为多消费者数组格式（核心修改）
+    consumers: []
+
+  # CDC 专用链路：Canal → product_cdc_topic → Elasticsearch。
+  # 该消费者组与业务 Topic/消费者隔离，避免业务消息和同步消息混用。
+  - biz_name: "product_cdc"
+    topic: "product_cdc_topic"
+    producer_group: "product_cdc_producer_group"
+    retry_times: 1
+    max_send_qps: 2000
+    send_timeout: 2000
     consumers:
-      - consumer_group: "product_consumer_group"     # 补充消费者组（原配置缺失，需补充）
-        consume_handler: "product"                    # 原单字段consume_handler移到数组内
-        message_model: "clustering"                  # 使用默认消费模式（可省略，程序读取时兜底）
-        thread_nums: 10                               # 补充可选的消费线程数（可根据需求调整）
+      - consumer_group: "product_es_consumer_group"
+        message_model: "clustering"
+        thread_nums: 10

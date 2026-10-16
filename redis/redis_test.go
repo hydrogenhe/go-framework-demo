@@ -11,7 +11,7 @@ import (
 	require2 "github.com/stretchr/testify/require"
 )
 
-// TestRedisKV 测试核心的KV增删改查（优化版）
+// TestRedisKV 使用真实 Redis，验证键值读写、删除、空字符串和键不存在时的返回值。
 func TestRedisKV(t *testing.T) {
 	Init()
 
@@ -90,6 +90,7 @@ func TestRedisKV(t *testing.T) {
 	t.Log("所有Redis KV测试用例执行成功！")
 }
 
+// TestRedisSetNX_WithExpire 验证 Redis 的 NX 只在键不存在时写入，并检查有效期及过期后的再次写入。
 func TestRedisSetNX_WithExpire(t *testing.T) {
 	Init()
 	requ := require2.New(t)
@@ -107,10 +108,11 @@ func TestRedisSetNX_WithExpire(t *testing.T) {
 	t.Logf("前置清理：删除key数量=%d", delCnt)
 
 	// ========== 第一次Set NX（成功） ==========
-	ok, err := RedisClient.SetArgs(ctx, testKey, testValue, redis.SetArgs{
+	setOptions := redis.SetArgs{
 		TTL:  expireTime,
 		Mode: "NX",
-	}).Result()
+	}
+	ok, err := RedisClient.SetArgs(ctx, testKey, testValue, setOptions).Result()
 	requ.NoError(err, "第一次Set NX失败")
 	requ.Equal(RedisOK, ok, "第一次Set NX应返回OK，实际返回=%s", ok)
 	t.Logf("第一次Set NX：ok=%s", ok)
@@ -135,10 +137,11 @@ func TestRedisSetNX_WithExpire(t *testing.T) {
 	t.Logf("Get key：值=%s", val)
 
 	// ========== 第二次Set NX（key已存在，预期失败） ==========
-	ok, err = RedisClient.SetArgs(ctx, testKey, testValue, redis.SetArgs{
+	updateOptions := redis.SetArgs{
 		TTL:  expireTime,
 		Mode: "NX",
-	}).Result()
+	}
+	ok, err = RedisClient.SetArgs(ctx, testKey, testValue, updateOptions).Result()
 
 	// 核心1：NX失败时err必为nil，断言失败说明有真正的Redis异常
 	if errors.Is(err, redis.Nil) {
@@ -155,10 +158,11 @@ func TestRedisSetNX_WithExpire(t *testing.T) {
 	time.Sleep(expireTime + 100*time.Millisecond)
 	t.Log("等待key过期完成")
 
-	ok, err = RedisClient.SetArgs(ctx, testKey, testValue, redis.SetArgs{
+	keepTTLOptions := redis.SetArgs{
 		TTL:  expireTime,
 		Mode: "NX",
-	}).Result()
+	}
+	ok, err = RedisClient.SetArgs(ctx, testKey, testValue, keepTTLOptions).Result()
 	requ.NoError(err, "过期后Set NX失败")
 	requ.Equal(RedisOK, ok, "过期后Set NX应返回OK，实际返回=%s", ok)
 	t.Logf("过期后Set NX：ok=%s", ok)

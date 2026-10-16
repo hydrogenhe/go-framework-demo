@@ -3,14 +3,14 @@ package es
 import (
 	"context"
 	"fmt"
-	"log"
+	"go-framework-demo/logger"
+	stdlog "log"
 	"net/http"
 	"os"
-	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/olivere/elastic/v7" // 正确导入 olivere/elastic/v7
+	"go-framework-demo/util"
 	"gopkg.in/yaml.v3"
 )
 
@@ -20,30 +20,27 @@ var (
 )
 
 // -------------------------- 配置结构体（兼容原有 es.yaml） --------------------------
-type ESConfig struct {
-	Addresses  []string `yaml:"addresses"`   // ES 节点地址
-	Username   string   `yaml:"username"`    // 认证用户名
-	Password   string   `yaml:"password"`    // 认证密码
-	Timeout    int      `yaml:"timeout"`     // 超时时间（秒）
-	MaxRetries int      `yaml:"max_retries"` // 最大重试次数
-	Sniff      bool     `yaml:"sniff"`       // 节点嗅探（单节点建议 false）
-}
+type ESConfig = util.ESConfig
 
 type ESYamlConfig struct {
 	Elasticsearch ESConfig `yaml:"elasticsearch"`
 }
 
 // InitES -------------------------- 初始化方法（适配 olivere/elastic/v7 正确 API） --------------------------
-func InitES() error {
-	// 1. 获取配置文件路径
-	_, currentFile, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Dir(filepath.Dir(currentFile)) // 项目根目录
-	configPath := filepath.Join(projectRoot, "conf", "es.yaml")
-
-	// 2. 加载配置
-	cfg, err := loadESConfig(configPath)
-	if err != nil {
-		return fmt.Errorf("加载 ES 配置失败: %w", err)
+func InitES(configs ...ESConfig) error {
+	var cfg ESConfig
+	var err error
+	if len(configs) > 0 {
+		cfg = normalizeESConfig(configs[0])
+	} else {
+		configPath, pathErr := util.ConfigFile("es.yaml")
+		if pathErr != nil {
+			return fmt.Errorf("定位 ES 配置失败: %w", pathErr)
+		}
+		cfg, err = loadESConfig(configPath)
+		if err != nil {
+			return fmt.Errorf("加载 ES 配置失败: %w", err)
+		}
 	}
 
 	// 3. 构建 olivere/elastic 客户端选项（核心：修复 API 调用）
@@ -75,8 +72,8 @@ func InitES() error {
 	opts = append(opts, elastic.SetMaxRetries(cfg.MaxRetries))
 
 	// 3.4 日志配置（调试用）
-	opts = append(opts, elastic.SetErrorLog(log.New(os.Stderr, "ES-ERROR: ", log.LstdFlags)))
-	opts = append(opts, elastic.SetInfoLog(log.New(os.Stdout, "ES-INFO: ", log.LstdFlags)))
+	opts = append(opts, elastic.SetErrorLog(stdlog.New(os.Stderr, "ES-ERROR: ", stdlog.LstdFlags)))
+	opts = append(opts, elastic.SetInfoLog(stdlog.New(os.Stdout, "ES-INFO: ", stdlog.LstdFlags)))
 
 	// 4. 创建客户端（olivere 正确 API）
 	client, err := elastic.NewClient(opts...)
@@ -91,10 +88,15 @@ func InitES() error {
 	if err != nil {
 		return fmt.Errorf("连接 ES 失败: %w", err)
 	}
-	log.Printf("✅ 连接 ES 成功（olivere/elastic/v7）：%+v", info)
+	logger.Sugar.Infof("✅ 连接 ES 成功（olivere/elastic/v7）：%+v", info)
 
 	// 6. 赋值全局客户端
 	ElasticClient = client
+	if err := EnsureCreateTimeStampMapping(ctx); err != nil {
+		client.Stop()
+		ElasticClient = nil
+		return err
+	}
 	return nil
 }
 
@@ -113,9 +115,12 @@ func loadESConfig(configPath string) (ESConfig, error) {
 	}
 
 	// 3. 设置默认值
-	cfg := yamlConfig.Elasticsearch
+	return normalizeESConfig(yamlConfig.Elasticsearch), nil
+}
+
+func normalizeESConfig(cfg ESConfig) ESConfig {
 	if len(cfg.Addresses) == 0 {
-		cfg.Addresses = []string{"http://127.0.0.1:9200"}
+		return cfg
 	}
 	if cfg.Timeout <= 0 {
 		cfg.Timeout = 10
@@ -125,5 +130,5 @@ func loadESConfig(configPath string) (ESConfig, error) {
 	}
 	cfg.Sniff = false // 单节点强制关闭嗅探
 
-	return cfg, nil
+	return cfg
 }

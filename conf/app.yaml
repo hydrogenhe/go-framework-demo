@@ -1,0 +1,36 @@
+# 应用进程配置；启动时读取，修改后重启对应的后端或前端服务生效。
+http:
+  # 后端 HTTP API 监听地址。":8080" 监听所有网卡；仅本机访问可写 "127.0.0.1:8080"。
+  address: ":8080"
+
+logs:
+  # 后端日志保存目录，按天写入 app-YYYY-MM-DD.log；未配置时默认 logs。
+  # 后端启动时相对路径基于进程工作目录；部署时可填写绝对路径。
+  directory: logs
+
+frontend:
+  # 浏览器访问的后端 API 根地址，包含 http:// 或 https://，例如 https://api.example.com。
+  # 本机使用 localhost；远程访问时填写浏览器可达的服务器公网 IP/域名。
+  # 前端静态服务启动时写入 runtime-config.js，修改后重启前端服务并刷新页面。
+  api_base_url: http://localhost:8080
+  # 独立前端静态服务器的监听地址，与后端端口分开；":5500" 监听所有网卡。
+  address: ":5500"
+
+snowflake:
+  # Snowflake ID 生成器的机器号，范围 0–1023；越界时当前实现回退为 1。
+  # 多个同时生成业务 ID 的应用实例应使用不同机器号，避免 ID 冲突。
+  machine_id: 1
+
+reconciliation:
+  # MySQL → ES 对账间隔，单位小时；未配置或小于等于 0 时默认 24。
+  # 后端启动后立即执行一轮，每轮结束后等待该时长；不是每天固定时刻执行。
+  # 对账以 MySQL 为事实源，会更新或删除 ES 副本，并产生数据库与 ES 访问负载。
+  interval_hours: 24
+
+order_expiration:
+  # 到期订单扫描间隔，单位秒；未配置或为 0 时默认 3，负数会导致配置校验失败。
+  # 启动后立即扫描；一轮结束或查询失败后等待该时长，再从头检查到期订单。
+  # 一轮内按 (expire_time, id) 游标持续取数，每批最多 50 条，不逐批等待此间隔。
+  # 扫描协程池上限 200；满载时停止查库并等待空位，关单失败或锁冲突留待后续轮次处理。
+  # 本项不是支付期限；支付期限由 Redis 的 order:payment_timeout_minutes 指定，默认 10 分钟。
+  interval_seconds: 3

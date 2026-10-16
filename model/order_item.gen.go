@@ -4,15 +4,25 @@
 
 package model
 
+import (
+	"time"
+)
+
 const TableNameOrderItem = "order_item"
 
 // OrderItem mapped from table <order_item>
 type OrderItem struct {
-	ID           int64 `gorm:"column:id;primaryKey" json:"id"`
-	OrderID      int64 `gorm:"column:order_id;not null" json:"order_id"`
-	ProductID    int64 `gorm:"column:product_id;not null" json:"product_id"`
-	Quantity     int32 `gorm:"column:quantity;not null" json:"quantity"`
-	UnitPriceFen int64 `gorm:"column:unit_price_fen;not null;comment:下单时单价（单位：分）" json:"unit_price_fen"` // 下单时单价（单位：分）
+	ID             int64     `gorm:"column:id;primaryKey" json:"id"`
+	OrderID        int64     `gorm:"column:order_id;not null" json:"order_id"`
+	ProductID      int64     `gorm:"column:product_id;not null" json:"product_id"`
+	Quantity       int32     `gorm:"column:quantity;not null" json:"quantity"`
+	UnitPriceFen   int64     `gorm:"column:unit_price_fen;not null;comment:下单时单价（单位：分）" json:"unit_price_fen"`                 // 下单时单价（单位：分）
+	Status         int32     `gorm:"column:status;not null;default:1;comment:明细状态：1待发货，2已发货" json:"status"`                    // 明细状态：1待发货，2已发货
+	Image          string    `gorm:"column:image;not null;comment:下单时商品图片快照" json:"image"`                                     // 下单时商品图片快照
+	IsDel          DeletedAt `gorm:"column:is_del;not null;comment:软删除：0正常，1已删除;softDelete:flag" json:"is_del"`                // 软删除：0正常，1已删除
+	ProductName    string    `gorm:"column:product_name;not null;comment:下单时商品名称快照" json:"product_name"`                       // 下单时商品名称快照
+	UpdateTime     time.Time `gorm:"column:update_time;not null;default:CURRENT_TIMESTAMP(3);comment:更新时间" json:"update_time"` // 更新时间
+	ProductVersion int32     `gorm:"column:product_version;not null;comment:下单时商品资料版本，0表示历史订单未记录" json:"product_version"`      // 下单时商品资料版本，0表示历史订单未记录
 }
 
 // TableName OrderItem's table name

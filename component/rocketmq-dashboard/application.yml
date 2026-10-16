@@ -1,0 +1,10 @@
+server:
+  port: 8082
+rocketmq:
+  config:
+    namesrvAddrs:
+      - "${MQ_DASHBOARD_NAMESRV_ADDR}"
+    isVIPChannel: false
+    timeoutMillis: 5000
+    dataPath: /tmp/rocketmq-console/data
+    loginRequired: false

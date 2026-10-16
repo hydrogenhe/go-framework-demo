@@ -1,0 +1,19 @@
+name: demo-rocketmq-dashboard
+services:
+  dashboard:
+    image: apacherocketmq/rocketmq-dashboard:2.1.0
+    platform: linux/amd64
+    container_name: demo-rocketmq-dashboard
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${DASHBOARD_PORT:-8082}:8082"
+    environment:
+      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/config/application.yml
+      MQ_DASHBOARD_NAMESRV_ADDR: ${DASHBOARD_NAMESRV_ADDR:-host.docker.internal:9876}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./application.yml:/config/application.yml:ro
+      - dashboard-data:/tmp/rocketmq-console/data
+volumes:
+  dashboard-data:

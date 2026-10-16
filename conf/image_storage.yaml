@@ -1,0 +1,7 @@
+# 图片存储连接配置。上云前请填写对象存储地址及生产凭据。
+image_storage:
+  endpoint: http://127.0.0.1:8333
+  bucket: product-images
+  public_url: http://localhost:8888/buckets/product-images
+  access_key: demo-c88341336f6972a6b34d96de
+  secret_key: c3fc6a3d4a6f20430dc4523cbed508762828c407dfa3a3b5da16d2debd3feaf2

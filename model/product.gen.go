@@ -4,14 +4,23 @@
 
 package model
 
+import (
+	"time"
+)
+
 const TableNameProduct = "product"
 
 // Product mapped from table <product>
 type Product struct {
-	ID    int64  `gorm:"column:id;primaryKey" json:"id"`
-	Name  string `gorm:"column:name;not null;comment:商品名称" json:"name"`         // 商品名称
-	Price int64  `gorm:"column:price;not null;comment:商品价格（单位：分）" json:"price"` // 商品价格（单位：分）
-	Stock int32  `gorm:"column:stock;comment:库存" json:"stock"`                  // 库存
+	ID             int64     `gorm:"column:id;primaryKey" json:"id"`
+	Name           string    `gorm:"column:name;not null;comment:商品名称" json:"name"`         // 商品名称
+	Price          int64     `gorm:"column:price;not null;comment:商品价格（单位：分）" json:"price"` // 商品价格（单位：分）
+	Stock          int32     `gorm:"column:stock;comment:库存" json:"stock"`                  // 库存
+	Image          string    `gorm:"column:image;not null" json:"image"`
+	CreateTime     time.Time `gorm:"column:create_time;not null;default:CURRENT_TIMESTAMP(3);comment:创建时间" json:"create_time"` // 创建时间
+	IsDel          DeletedAt `gorm:"column:is_del;not null;comment:软删除：0正常，1已删除;softDelete:flag" json:"is_del"`                // 软删除：0正常，1已删除
+	UpdateTime     time.Time `gorm:"column:update_time;not null;default:CURRENT_TIMESTAMP(3);comment:更新时间" json:"update_time"` // 更新时间
+	CurrentVersion int32     `gorm:"column:current_version;not null;default:1;comment:当前商品资料版本" json:"current_version"`        // 当前商品资料版本
 }
 
 // TableName Product's table name

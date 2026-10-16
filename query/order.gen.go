@@ -32,6 +32,11 @@ func newOrder(db *gorm.DB, opts ...gen.DOOption) order {
 	_order.OrderNo = field.NewString(tableName, "order_no")
 	_order.UserID = field.NewInt64(tableName, "user_id")
 	_order.Amount = field.NewInt64(tableName, "amount")
+	_order.Status = field.NewInt32(tableName, "status")
+	_order.CreateTime = field.NewTime(tableName, "create_time")
+	_order.ExpireTime = field.NewTime(tableName, "expire_time")
+	_order.IsDel = field.NewField(tableName, "is_del")
+	_order.UpdateTime = field.NewTime(tableName, "update_time")
 
 	_order.fillFieldMap()
 
@@ -41,11 +46,16 @@ func newOrder(db *gorm.DB, opts ...gen.DOOption) order {
 type order struct {
 	orderDo orderDo
 
-	ALL     field.Asterisk
-	ID      field.Int64
-	OrderNo field.String // 订单号
-	UserID  field.Int64
-	Amount  field.Int64 // 订单金额（单位：分）
+	ALL        field.Asterisk
+	ID         field.Int64
+	OrderNo    field.String // 订单号
+	UserID     field.Int64
+	Amount     field.Int64 // 订单金额（单位：分）
+	Status     field.Int32 // 订单状态：1待支付，2已支付，3已完成，4已取消
+	CreateTime field.Time  // 创建时间
+	ExpireTime field.Time  // 支付截止时间
+	IsDel      field.Field // 软删除：0正常，1已删除
+	UpdateTime field.Time  // 更新时间
 
 	fieldMap map[string]field.Expr
 }
@@ -66,6 +76,11 @@ func (o *order) updateTableName(table string) *order {
 	o.OrderNo = field.NewString(table, "order_no")
 	o.UserID = field.NewInt64(table, "user_id")
 	o.Amount = field.NewInt64(table, "amount")
+	o.Status = field.NewInt32(table, "status")
+	o.CreateTime = field.NewTime(table, "create_time")
+	o.ExpireTime = field.NewTime(table, "expire_time")
+	o.IsDel = field.NewField(table, "is_del")
+	o.UpdateTime = field.NewTime(table, "update_time")
 
 	o.fillFieldMap()
 
@@ -90,11 +105,16 @@ func (o *order) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (o *order) fillFieldMap() {
-	o.fieldMap = make(map[string]field.Expr, 4)
+	o.fieldMap = make(map[string]field.Expr, 8)
 	o.fieldMap["id"] = o.ID
 	o.fieldMap["order_no"] = o.OrderNo
 	o.fieldMap["user_id"] = o.UserID
 	o.fieldMap["amount"] = o.Amount
+	o.fieldMap["status"] = o.Status
+	o.fieldMap["create_time"] = o.CreateTime
+	o.fieldMap["expire_time"] = o.ExpireTime
+	o.fieldMap["is_del"] = o.IsDel
+	o.fieldMap["update_time"] = o.UpdateTime
 }
 
 func (o order) clone(db *gorm.DB) order {

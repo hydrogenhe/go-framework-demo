@@ -2,39 +2,27 @@ package db
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"go-framework-demo/mysql"
-	"go-framework-demo/query" // Gen 生成的 query 包
+	"go-framework-demo/query"
+	"gorm.io/gorm"
 )
 
-// TxContextKey 上下文传递事务 Query 的 key
-type TxContextKey struct{}
-
-// WithTx 全局事务封装（复用 Gen 内置 Transaction 方法）
-func WithTx(ctx context.Context, fn func(ctx context.Context, txQ *query.Query) error) error {
-	// 校验全局 Query
-	GlobalQuery := mysql.GetGenQuery()
-	if GlobalQuery == nil || !GlobalQuery.Available() {
-		return fmt.Errorf("全局 Query 未初始化，请先调用 InitDB")
+// WithTx 绑定请求上下文并开启事务，回调返回错误时回滚，成功时提交。
+// 默认使用全局 Query；传入 baseQ 时沿用该 Query，支持外层事务中的调用。
+// 事务 Query 通过回调参数显式传递，不存入上下文。
+func WithTx(ctx context.Context, fn func(context.Context, *query.Query) error, baseQ ...*query.Query) error {
+	q := mysql.GetGenQuery()
+	if len(baseQ) > 0 && baseQ[0] != nil {
+		q = baseQ[0]
 	}
-
-	// 调用 Gen 内置的 Transaction 方法（适配你的 Gen 代码）
-	return GlobalQuery.Transaction(func(txQ *query.Query) error {
-		// 将事务 Query 存入上下文
-		ctx := context.WithValue(ctx, TxContextKey{}, txQ)
-		// 执行业务逻辑
-		return fn(ctx, txQ)
+	if q == nil || !q.Available() {
+		return errors.New("事务 Query 未初始化")
+	}
+	if fn == nil {
+		return errors.New("事务回调不能为空")
+	}
+	return q.UnderlyingDB().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return fn(ctx, query.Use(tx))
 	})
-}
-
-// GetTxQuery 从上下文获取事务 Query
-func GetTxQuery(ctx context.Context, defaultQ *query.Query) *query.Query {
-	// 优先级：上下文事务 Query > 传入的 defaultQ > 全局 GlobalQuery
-	if txQ, ok := ctx.Value(TxContextKey{}).(*query.Query); ok && txQ != nil {
-		return txQ
-	}
-	if defaultQ != nil && defaultQ.Available() {
-		return defaultQ
-	}
-	return mysql.GetGenQuery()
 }

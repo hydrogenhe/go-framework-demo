@@ -33,6 +33,12 @@ func newOrderItem(db *gorm.DB, opts ...gen.DOOption) orderItem {
 	_orderItem.ProductID = field.NewInt64(tableName, "product_id")
 	_orderItem.Quantity = field.NewInt32(tableName, "quantity")
 	_orderItem.UnitPriceFen = field.NewInt64(tableName, "unit_price_fen")
+	_orderItem.Status = field.NewInt32(tableName, "status")
+	_orderItem.Image = field.NewString(tableName, "image")
+	_orderItem.IsDel = field.NewField(tableName, "is_del")
+	_orderItem.ProductName = field.NewString(tableName, "product_name")
+	_orderItem.UpdateTime = field.NewTime(tableName, "update_time")
+	_orderItem.ProductVersion = field.NewInt32(tableName, "product_version")
 
 	_orderItem.fillFieldMap()
 
@@ -42,12 +48,18 @@ func newOrderItem(db *gorm.DB, opts ...gen.DOOption) orderItem {
 type orderItem struct {
 	orderItemDo orderItemDo
 
-	ALL          field.Asterisk
-	ID           field.Int64
-	OrderID      field.Int64
-	ProductID    field.Int64
-	Quantity     field.Int32
-	UnitPriceFen field.Int64 // 下单时单价（单位：分）
+	ALL            field.Asterisk
+	ID             field.Int64
+	OrderID        field.Int64
+	ProductID      field.Int64
+	Quantity       field.Int32
+	UnitPriceFen   field.Int64  // 下单时单价（单位：分）
+	Status         field.Int32  // 明细状态：1待发货，2已发货
+	Image          field.String // 下单时商品图片快照
+	IsDel          field.Field  // 软删除：0正常，1已删除
+	ProductName    field.String // 下单时商品名称快照
+	UpdateTime     field.Time   // 更新时间
+	ProductVersion field.Int32  // 下单时商品资料版本，0表示历史订单未记录
 
 	fieldMap map[string]field.Expr
 }
@@ -69,6 +81,12 @@ func (o *orderItem) updateTableName(table string) *orderItem {
 	o.ProductID = field.NewInt64(table, "product_id")
 	o.Quantity = field.NewInt32(table, "quantity")
 	o.UnitPriceFen = field.NewInt64(table, "unit_price_fen")
+	o.Status = field.NewInt32(table, "status")
+	o.Image = field.NewString(table, "image")
+	o.IsDel = field.NewField(table, "is_del")
+	o.ProductName = field.NewString(table, "product_name")
+	o.UpdateTime = field.NewTime(table, "update_time")
+	o.ProductVersion = field.NewInt32(table, "product_version")
 
 	o.fillFieldMap()
 
@@ -95,12 +113,18 @@ func (o *orderItem) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (o *orderItem) fillFieldMap() {
-	o.fieldMap = make(map[string]field.Expr, 5)
+	o.fieldMap = make(map[string]field.Expr, 11)
 	o.fieldMap["id"] = o.ID
 	o.fieldMap["order_id"] = o.OrderID
 	o.fieldMap["product_id"] = o.ProductID
 	o.fieldMap["quantity"] = o.Quantity
 	o.fieldMap["unit_price_fen"] = o.UnitPriceFen
+	o.fieldMap["status"] = o.Status
+	o.fieldMap["image"] = o.Image
+	o.fieldMap["is_del"] = o.IsDel
+	o.fieldMap["product_name"] = o.ProductName
+	o.fieldMap["update_time"] = o.UpdateTime
+	o.fieldMap["product_version"] = o.ProductVersion
 }
 
 func (o orderItem) clone(db *gorm.DB) orderItem {

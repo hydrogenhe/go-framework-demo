@@ -77,8 +77,6 @@ func (r *RedisGenericCache[T]) Get(ctx context.Context, prefix string, id any) (
 	if tType.Kind() == reflect.Ptr && reflect.ValueOf(obj).IsNil() {
 		// 创建指针指向的实例，再赋值给 obj
 		elem := reflect.New(tType.Elem())
-		elemType := elem.Type()
-		fmt.Println(elemType)
 		newObj := elem.Interface()
 		obj = newObj.(T)
 	}
@@ -103,18 +101,33 @@ func (r *RedisGenericCache[T]) Del(ctx context.Context, prefix string, id any) e
 
 // --------------------------- User 专属缓存（全程指针，零拷贝） ---------------------------
 const (
-	UserCachePrefix = "user"
-	DefaultExpire   = 1 * time.Hour
+	// UserCachePrefix 用户缓存键前缀。
+	UserCachePrefix    = "user"
+	// ProductCachePrefix 商品缓存键前缀。
+	ProductCachePrefix = "product"
+	// DefaultExpire 通用缓存默认有效期，1小时。
+	DefaultExpire      = 1 * time.Hour
+	// ProductCacheExpire 商品缓存有效期，5小时。
+	ProductCacheExpire = 5 * time.Hour
 )
 
-type UserCache struct {
-	// 泛型绑定 *model.User（指针类型）
-	genericCache GenericCache[*model.User]
+// UserCacheInterface 列出用户缓存的全部公开方法。
+type UserCacheInterface interface {
+	SetUser(ctx context.Context, user *model.User) error
+	GetUser(ctx context.Context, userID int64) (*model.User, bool, error)
+	DelUser(ctx context.Context, userID int64) error
 }
+
+type UserCache struct {
+	// 用户缓存使用独立存储结构。
+	genericCache GenericCache[*userRecord]
+}
+
+var _ UserCacheInterface = (*UserCache)(nil)
 
 func NewUserCache() *UserCache {
 	// 绑定指针类型，全程无值拷贝
-	genericCache := NewRedisGenericCache[*model.User](RedisClient)
+	genericCache := NewRedisGenericCache[*userRecord](RedisClient)
 	return &UserCache{
 		genericCache: genericCache,
 	}
@@ -126,14 +139,51 @@ func (h *UserCache) SetUser(ctx context.Context, user *model.User) error {
 		return errors.New("user object is nil")
 	}
 	// 直接传入指针，无值拷贝
-	return h.genericCache.Set(ctx, UserCachePrefix, user.ID, user, DefaultExpire)
+	return h.genericCache.Set(ctx, UserCachePrefix, user.ID, userToRecord(user), DefaultExpire)
 }
 
 // GetUser ：返回 *model.User，内部自动分配内存（零拷贝）
 func (h *UserCache) GetUser(ctx context.Context, userID int64) (*model.User, bool, error) {
-	return h.genericCache.Get(ctx, UserCachePrefix, userID)
+	record, hit, err := h.genericCache.Get(ctx, UserCachePrefix, userID)
+	if err != nil || !hit || record == nil {
+		return nil, false, err
+	}
+	user, err := record.model()
+	return user, err == nil, err
 }
 
 func (h *UserCache) DelUser(ctx context.Context, userID int64) error {
 	return h.genericCache.Del(ctx, UserCachePrefix, userID)
+}
+
+// ProductCacheInterface 列出商品缓存的全部公开方法。
+type ProductCacheInterface interface {
+	SetProduct(ctx context.Context, product *model.Product) error
+	GetProduct(ctx context.Context, productID int64) (*model.Product, bool, error)
+	DelProduct(ctx context.Context, productID int64) error
+}
+
+type ProductCache struct {
+	genericCache GenericCache[*model.Product]
+}
+
+var _ ProductCacheInterface = (*ProductCache)(nil)
+
+func NewProductCache() *ProductCache {
+	return &ProductCache{genericCache: NewRedisGenericCache[*model.Product](RedisClient)}
+}
+
+func (c *ProductCache) SetProduct(ctx context.Context, product *model.Product) error {
+	if product == nil {
+		return errors.New("product object is nil")
+	}
+	return c.genericCache.Set(ctx, ProductCachePrefix, product.ID, product, ProductCacheExpire)
+}
+
+func (c *ProductCache) GetProduct(ctx context.Context, productID int64) (*model.Product, bool, error) {
+	return c.genericCache.Get(ctx, ProductCachePrefix, productID)
+}
+
+func (c *ProductCache) DelProduct(ctx context.Context, productID int64) error {
+	return c.genericCache.Del(ctx, ProductCachePrefix, productID)
 }

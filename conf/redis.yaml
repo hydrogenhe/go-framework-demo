@@ -1,0 +1,8 @@
+# Redis 连接配置。
+redis:
+  address: 127.0.0.1:6379
+  password: ""
+  database: 0
+  dial_timeout_seconds: 5
+  read_timeout_seconds: 3
+  write_timeout_seconds: 3

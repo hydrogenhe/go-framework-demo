@@ -13,10 +13,13 @@ const TableNameUser = "user"
 // User mapped from table <user>
 type User struct {
 	ID         int64     `gorm:"column:id;primaryKey" json:"id"`
-	Name       string    `gorm:"column:name;not null;comment:姓名" json:"name"`                                  // 姓名
-	Age        int32     `gorm:"column:age;comment:年龄" json:"age"`                                             // 年龄
-	Email      string    `gorm:"column:email;not null;comment:邮箱" json:"email"`                                // 邮箱
-	CreateTime time.Time `gorm:"column:create_time;default:CURRENT_TIMESTAMP;comment:创建时间" json:"create_time"` // 创建时间
+	Name       string    `gorm:"column:name;not null;comment:姓名" json:"name"`                                              // 姓名
+	Age        int32     `gorm:"column:age;comment:年龄" json:"age"`                                                         // 年龄
+	Email      string    `gorm:"column:email;not null;comment:邮箱" json:"email"`                                            // 邮箱
+	CreateTime time.Time `gorm:"column:create_time;default:CURRENT_TIMESTAMP;comment:创建时间" json:"create_time"`             // 创建时间
+	Password   string    `gorm:"column:password;not null;comment:密码MD5" json:"password"`                                   // 密码MD5
+	IsDel      DeletedAt `gorm:"column:is_del;not null;comment:软删除：0正常，1已删除;softDelete:flag" json:"is_del"`                // 软删除：0正常，1已删除
+	UpdateTime time.Time `gorm:"column:update_time;not null;default:CURRENT_TIMESTAMP(3);comment:更新时间" json:"update_time"` // 更新时间
 }
 
 // TableName User's table name

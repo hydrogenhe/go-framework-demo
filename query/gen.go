@@ -17,21 +17,23 @@ import (
 
 func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 	return &Query{
-		db:        db,
-		Order:     newOrder(db, opts...),
-		OrderItem: newOrderItem(db, opts...),
-		Product:   newProduct(db, opts...),
-		User:      newUser(db, opts...),
+		db:             db,
+		Order:          newOrder(db, opts...),
+		OrderItem:      newOrderItem(db, opts...),
+		Product:        newProduct(db, opts...),
+		ProductVersion: newProductVersion(db, opts...),
+		User:           newUser(db, opts...),
 	}
 }
 
 type Query struct {
 	db *gorm.DB
 
-	Order     order
-	OrderItem orderItem
-	Product   product
-	User      user
+	Order          order
+	OrderItem      orderItem
+	Product        product
+	ProductVersion productVersion
+	User           user
 }
 
 func (q *Query) Available() bool { return q.db != nil }
@@ -40,11 +42,12 @@ func (q *Query) UnderlyingDB() *gorm.DB { return q.db }
 
 func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
-		db:        db,
-		Order:     q.Order.clone(db),
-		OrderItem: q.OrderItem.clone(db),
-		Product:   q.Product.clone(db),
-		User:      q.User.clone(db),
+		db:             db,
+		Order:          q.Order.clone(db),
+		OrderItem:      q.OrderItem.clone(db),
+		Product:        q.Product.clone(db),
+		ProductVersion: q.ProductVersion.clone(db),
+		User:           q.User.clone(db),
 	}
 }
 
@@ -58,27 +61,30 @@ func (q *Query) WriteDB() *Query {
 
 func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 	return &Query{
-		db:        db,
-		Order:     q.Order.replaceDB(db),
-		OrderItem: q.OrderItem.replaceDB(db),
-		Product:   q.Product.replaceDB(db),
-		User:      q.User.replaceDB(db),
+		db:             db,
+		Order:          q.Order.replaceDB(db),
+		OrderItem:      q.OrderItem.replaceDB(db),
+		Product:        q.Product.replaceDB(db),
+		ProductVersion: q.ProductVersion.replaceDB(db),
+		User:           q.User.replaceDB(db),
 	}
 }
 
 type queryCtx struct {
-	Order     IOrderDo
-	OrderItem IOrderItemDo
-	Product   IProductDo
-	User      IUserDo
+	Order          IOrderDo
+	OrderItem      IOrderItemDo
+	Product        IProductDo
+	ProductVersion IProductVersionDo
+	User           IUserDo
 }
 
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
-		Order:     q.Order.WithContext(ctx),
-		OrderItem: q.OrderItem.WithContext(ctx),
-		Product:   q.Product.WithContext(ctx),
-		User:      q.User.WithContext(ctx),
+		Order:          q.Order.WithContext(ctx),
+		OrderItem:      q.OrderItem.WithContext(ctx),
+		Product:        q.Product.WithContext(ctx),
+		ProductVersion: q.ProductVersion.WithContext(ctx),
+		User:           q.User.WithContext(ctx),
 	}
 }
 

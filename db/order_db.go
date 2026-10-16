@@ -4,82 +4,52 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
-	"strings"
+	"go-framework-demo/logger"
+	"time"
 
 	"go-framework-demo/model"
 	"go-framework-demo/mysql"
 	"go-framework-demo/query"
-
+	"gorm.io/gen/field"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
-
-// TxContextKey 事务上下文key（和user表复用，无需重复定义）
 
 // OrderDbInterface 订单表DB层接口（全程int64分单位，无float64）
 type OrderDbInterface interface {
-	Create(orderNo string, userId int64, amountFen int64) (*model.Order, error)
-	GetByID(id int64) (*model.Order, error)
-	GetByOrderNo(orderNo string) (*model.Order, error)
-	GetByUserID(userId int64) ([]*model.Order, error)
-	Update(id int64, updateData map[string]interface{}) (*model.Order, error)
-	Delete(id int64) (bool, error)
-	BatchCreateOrders(orders []*model.Order) error
-	CreateWithItems(orderNo string, userID int64, items []*model.OrderItem) (*model.Order, error)
-}
-
-// CreateWithItems 在同一事务中创建订单和订单明细。
-func (o *OrderDb) CreateWithItems(orderNo string, userID int64, items []*model.OrderItem) (*model.Order, error) {
-	if orderNo == "" || userID <= 0 || len(items) == 0 {
-		return nil, errors.New("新增订单失败：订单号、用户ID和订单明细不能为空")
-	}
-	var created *model.Order
-	err := o.GenQuery.Transaction(func(txQ *query.Query) error {
-		var amount int64
-		for _, item := range items {
-			if item == nil || item.ProductID <= 0 || item.Quantity <= 0 || item.UnitPriceFen <= 0 {
-				return errors.New("新增订单失败：订单明细参数无效")
-			}
-			amount += int64(item.Quantity) * item.UnitPriceFen
-		}
-		if amount <= 0 {
-			return errors.New("新增订单失败：订单金额必须大于0")
-		}
-		created = &model.Order{OrderNo: orderNo, UserID: userID, Amount: amount}
-		if err := txQ.Order.WithContext(context.Background()).Create(created); err != nil {
-			return fmt.Errorf("创建订单失败：%w", err)
-		}
-		itemDB, err := NewTxOrderItemDb(txQ)
-		if err != nil {
-			return err
-		}
-		for _, item := range items {
-			item.OrderID = created.ID
-			if _, err := itemDB.Create(item); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return created, nil
+	FindExpiredPage(ctx context.Context, input *ExpiredOrderQuery) ([]*model.Order, error)
+	FindExpiredIDs(ctx context.Context, status int32, limit int) ([]int64, error)
+	DatabaseNow(ctx context.Context) (time.Time, error)
+	GetByIDForUpdateIncludingDeleted(ctx context.Context, id int64, waitLock bool) (*model.Order, error)
+	UpdateExpiredStatus(ctx context.Context, id int64, source, target int32) (int64, error)
+	GetByIDs(ctx context.Context, ids []int64) ([]*model.Order, error)
+	GetByIDForUpdate(ctx context.Context, id int64) (*model.Order, error)
+	GetByIDsForUser(ctx context.Context, userID int64, ids []int64) ([]*model.Order, error)
+	Create(ctx context.Context, order *model.Order) (*model.Order, error)
+	GetByID(ctx context.Context, id int64) (*model.Order, error)
+	GetByOrderNo(ctx context.Context, orderNo string) (*model.Order, error)
+	GetByOrderNoForUser(ctx context.Context, userID int64, orderNo string) (*model.Order, error)
+	GetByUserID(ctx context.Context, userId int64) ([]*model.Order, error)
+	Update(ctx context.Context, id int64, input *model.OrderUpdateInput) (*model.Order, error)
+	Delete(ctx context.Context, id int64) (bool, error)
+	BatchCreateOrders(ctx context.Context, orders []*model.Order) error
+	GetByIDIncludingDeleted(ctx context.Context, id int64) (*model.Order, error)
 }
 
 type OrderDb struct {
 	GenQuery *query.Query // Gen根查询器（绑定普通/事务DB）
 }
 
-// NewOrderDb 初始化OrderDb - 从上下文获取事务txQ，无则用全局Query
-func NewOrderDb(ctx context.Context) (*OrderDb, error) {
-	// 1. 从上下文取事务txQ
+var _ OrderDbInterface = (*OrderDb)(nil)
+
+// NewOrderDb 使用显式事务 Query，未传入时使用全局 Query。
+func NewOrderDb(ctx context.Context, txQ ...*query.Query) (*OrderDb, error) {
 	var genQuery *query.Query
-	if v := ctx.Value(TxContextKey{}); v != nil {
-		genQuery = v.(*query.Query)
+	if len(txQ) > 0 && txQ[0] != nil {
+		genQuery = txQ[0]
 	}
 
-	// 2. 无事务则用全局Query
+	// 未传入事务查询器时使用全局 Query。
 	if genQuery == nil {
 		genQuery = mysql.GetGenQuery()
 	}
@@ -93,72 +63,74 @@ func NewOrderDb(ctx context.Context) (*OrderDb, error) {
 	}, nil
 }
 
-// NewTxOrderDb 创建事务版OrderDb（供Gen事务回调使用）
-func NewTxOrderDb(txQ *query.Query) (*OrderDb, error) {
-	if txQ == nil || !txQ.Available() {
-		return nil, errors.New("事务版Gen查询器无效")
-	}
-	return &OrderDb{
-		GenQuery: txQ,
-	}, nil
-}
-
 // --------------------------- 核心业务方法（全程int64分单位） ---------------------------
 
 // GetByID 根据ID查询订单
-func (o *OrderDb) GetByID(id int64) (*model.Order, error) {
+func (o *OrderDb) GetByID(ctx context.Context, id int64) (*model.Order, error) {
 	if id <= 0 {
 		return nil, errors.New("查询失败：订单ID必须大于0")
 	}
 
-	orderDo := o.GenQuery.WithContext(context.Background()).Order
-	order, err := orderDo.Where(o.GenQuery.Order.ID.Eq(id)).First()
+	orderQuery := o.GenQuery.Order
+	orderDo := orderQuery.WithContext(ctx)
+	order, err := orderDo.Where(orderQuery.ID.Eq(id)).First()
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("查询失败：订单不存在（ID=%d）", id)
-		}
-		log.Printf("查询订单系统错误：ID=%d，错误=%v", id, err)
-		return nil, fmt.Errorf("查询订单失败[系统错误]：%v（ID=%d）", err, id)
+		logger.Error(ctx, "查询订单系统错误", "order_id", id, "error", err)
+		return nil, fmt.Errorf("查询订单失败[系统错误]：%w（ID=%d）", err, id)
 	}
 
 	return order, nil
 }
 
 // GetByOrderNo 根据订单号查询订单（适配唯一键）
-func (o *OrderDb) GetByOrderNo(orderNo string) (*model.Order, error) {
+func (o *OrderDb) GetByOrderNo(ctx context.Context, orderNo string) (*model.Order, error) {
 	if orderNo == "" {
 		return nil, errors.New("查询失败：订单号不能为空")
 	}
 
-	orderDo := o.GenQuery.WithContext(context.Background()).Order
-	order, err := orderDo.Where(o.GenQuery.Order.OrderNo.Eq(orderNo)).First()
+	orderQuery := o.GenQuery.Order
+	orderDo := orderQuery.WithContext(ctx)
+	order, err := orderDo.Where(orderQuery.OrderNo.Eq(orderNo)).First()
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("查询失败：未找到匹配订单（订单号=%s）", orderNo)
-		}
-		log.Printf("查询订单系统错误：订单号=%s，错误=%v", orderNo, err)
-		return nil, fmt.Errorf("查询订单失败[系统错误]：%v（订单号=%s）", err, orderNo)
+		logger.Error(ctx, "查询订单系统错误", "order_no", orderNo, "error", err)
+		return nil, fmt.Errorf("查询订单失败[系统错误]：%w（订单号=%s）", err, orderNo)
 	}
 
 	return order, nil
 }
 
+// GetByOrderNoForUser 按当前用户和订单号查询订单，用于下单幂等判断。
+func (o *OrderDb) GetByOrderNoForUser(ctx context.Context, userID int64, orderNo string) (*model.Order, error) {
+	orderQuery := o.GenQuery.Order
+	order, err := orderQuery.WithContext(ctx).
+		Where(orderQuery.UserID.Eq(userID), orderQuery.OrderNo.Eq(orderNo)).
+		First()
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error(ctx, "按用户查询订单系统错误", "user_id", userID, "order_no", orderNo, "error", err)
+		}
+		return nil, fmt.Errorf("按用户查询订单失败: %w", err)
+	}
+	return order, nil
+}
+
 // GetByUserID 根据用户ID查询订单列表（优化无数据场景）
-func (o *OrderDb) GetByUserID(userId int64) ([]*model.Order, error) {
+func (o *OrderDb) GetByUserID(ctx context.Context, userId int64) ([]*model.Order, error) {
 	if userId <= 0 {
 		return nil, errors.New("查询失败：用户ID必须大于0")
 	}
 
-	orderDo := o.GenQuery.WithContext(context.Background()).Order
-	orders, err := orderDo.Where(o.GenQuery.Order.UserID.Eq(userId)).Find()
+	orderQuery := o.GenQuery.Order
+	orderDo := orderQuery.WithContext(ctx)
+	orders, err := orderDo.Where(orderQuery.UserID.Eq(userId)).Find()
 	if err != nil {
-		log.Printf("查询用户订单列表系统错误：用户ID=%d，错误=%v", userId, err)
-		return nil, fmt.Errorf("查询用户订单列表失败[系统错误]：%v（用户ID=%d）", err, userId)
+		logger.Error(ctx, "查询用户订单列表系统错误", "user_id", userId, "error", err)
+		return nil, fmt.Errorf("查询用户订单列表失败[系统错误]：%w（用户ID=%d）", err, userId)
 	}
 
 	// 无数据返回空切片（语义精准，调用方无需判nil）
 	if len(orders) == 0 {
-		log.Printf("提示：用户ID=%d 未查询到订单数据", userId)
+		logger.Info(ctx, "用户未查询到订单数据", "user_id", userId)
 		return []*model.Order{}, nil
 	}
 
@@ -166,152 +138,114 @@ func (o *OrderDb) GetByUserID(userId int64) ([]*model.Order, error) {
 }
 
 // Update 更新订单（金额仅接收int64分单位）
-func (o *OrderDb) Update(id int64, updateData map[string]interface{}) (*model.Order, error) {
+func (o *OrderDb) Update(ctx context.Context, id int64, input *model.OrderUpdateInput) (*model.Order, error) {
 	if id <= 0 {
 		return nil, errors.New("更新失败：订单ID必须大于0")
 	}
-	if len(updateData) == 0 {
-		return nil, errors.New("更新失败：请指定要修改的字段")
-	}
-
-	// 校验金额字段（仅接收int64分单位）
-	if amountVal, ok := updateData["amount"]; ok {
-		amountFen, isInt64 := amountVal.(int64)
-		if !isInt64 {
-			return nil, errors.New("更新失败：金额必须传入分单位的整数（int64类型）")
-		}
-		if amountFen <= 0 {
-			return nil, errors.New("更新失败：订单金额（分）必须大于0")
-		}
-	}
-
-	// 校验订单是否存在
-	if _, err := o.GetByID(id); err != nil {
+	columns, err := o.buildUpdateColumns(input)
+	if err != nil {
 		return nil, err
 	}
 
-	orderDo := o.GenQuery.WithContext(context.Background()).Order
-	resultInfo, err := orderDo.Where(o.GenQuery.Order.ID.Eq(id)).Updates(updateData)
-	if err != nil {
-		if isDuplicateOrderNoErr(err) {
-			return nil, fmt.Errorf("更新失败：订单号已存在（违反唯一键约束）")
-		}
-		log.Printf("更新订单系统错误：ID=%d，错误=%v", id, err)
-		return nil, fmt.Errorf("更新订单失败[系统错误]：%v（ID=%d）", err, id)
+	// 校验订单是否存在
+	if _, err := o.GetByID(ctx, id); err != nil {
+		return nil, err
 	}
 
-	if resultInfo.RowsAffected == 0 {
-		return nil, fmt.Errorf("更新失败：无数据被修改（ID=%d）", id)
+	orderQuery := o.GenQuery.Order
+	orderDo := orderQuery.WithContext(ctx)
+	// 合并为一条 UPDATE，避免逐字段 UpdateColumn 导致部分成功。
+	_, err = orderDo.Where(orderQuery.ID.Eq(id)).UpdateColumnSimple(columns...)
+	if err != nil {
+		logger.Error(ctx, "更新订单系统错误", "order_id", id, "error", err)
+		return nil, fmt.Errorf("更新订单失败[系统错误]：%w（ID=%d）", err, id)
 	}
 
 	// 返回更新后的订单
-	return o.GetByID(id)
+	return o.GetByID(ctx, id)
+}
+
+// buildUpdateColumns 集中组装订单更新列，保留非 nil 字段的明确赋值。
+func (o *OrderDb) buildUpdateColumns(input *model.OrderUpdateInput) ([]field.AssignExpr, error) {
+	if input == nil {
+		return nil, errors.New("订单更新参数不能为空")
+	}
+	orderQuery := o.GenQuery.Order
+	columns := make([]field.AssignExpr, 0, 2)
+	if input.Amount != nil {
+		columns = append(columns, orderQuery.Amount.Value(*input.Amount))
+	}
+	if input.Status != nil {
+		columns = append(columns, orderQuery.Status.Value(*input.Status))
+	}
+	if len(columns) == 0 {
+		return nil, errors.New("更新失败：请指定要修改的字段")
+	}
+	return columns, nil
 }
 
 // Delete 删除订单
-func (o *OrderDb) Delete(id int64) (bool, error) {
+func (o *OrderDb) Delete(ctx context.Context, id int64) (bool, error) {
 	if id <= 0 {
 		return false, errors.New("删除失败：订单ID必须大于0")
 	}
 
 	// 校验订单是否存在
-	if _, err := o.GetByID(id); err != nil {
+	if _, err := o.GetByID(ctx, id); err != nil {
 		return false, err
 	}
 
-	orderDo := o.GenQuery.WithContext(context.Background()).Order
-	_, err := orderDo.Where(o.GenQuery.Order.ID.Eq(id)).Delete()
+	orderQuery := o.GenQuery.Order
+	orderDo := orderQuery.WithContext(ctx)
+	result, err := orderDo.Where(orderQuery.ID.Eq(id)).Delete()
 	if err != nil {
-		log.Printf("删除订单系统错误：ID=%d，错误=%v", id, err)
-		return false, fmt.Errorf("删除订单失败[系统错误]：%v（ID=%d）", err, id)
+		logger.Error(ctx, "删除订单系统错误", "order_id", id, "error", err)
+		return false, fmt.Errorf("删除订单失败[系统错误]：%w（ID=%d）", err, id)
 	}
 
-	return true, nil
+	return result.RowsAffected > 0, nil
 }
 
-// Create 新增订单（全程int64分单位，无float64）
-func (o *OrderDb) Create(orderNo string, userId int64, amountFen int64) (*model.Order, error) {
-	// 参数校验（金融级严格校验）
-	if orderNo == "" {
-		return nil, errors.New("新增失败：订单号不能为空")
+// Create 保存由业务层组装好的订单模型。
+func (o *OrderDb) Create(ctx context.Context, order *model.Order) (*model.Order, error) {
+	orderQuery := o.GenQuery.Order
+	if err := orderQuery.WithContext(ctx).Create(order); err != nil {
+		return nil, fmt.Errorf("创建订单失败: %w", err)
 	}
-	if userId <= 0 {
-		return nil, errors.New("新增失败：用户ID必须大于0")
-	}
-	if amountFen <= 0 {
-		return nil, errors.New("新增失败：订单金额（分）必须大于0")
-	}
-
-	// 构建订单对象（直接赋值int64分，适配bigint字段）
-	newOrder := &model.Order{
-		OrderNo: orderNo,
-		UserID:  userId,
-		Amount:  amountFen, // 无类型转换，直接存分
-	}
-
-	orderDo := o.GenQuery.WithContext(context.Background()).Order
-	if err := orderDo.Create(newOrder); err != nil {
-		if isDuplicateOrderNoErr(err) {
-			return nil, fmt.Errorf("新增失败：订单号已存在（%s）", orderNo)
-		}
-		log.Printf("新增订单系统错误：订单号=%s，错误=%v", orderNo, err)
-		return nil, fmt.Errorf("新增订单失败[系统错误]：%v（订单信息：%+v）", err, newOrder)
-	}
-
-	return newOrder, nil
+	return order, nil
 }
 
-// BatchCreateOrders 批量新增订单（带事务，全程int64分）
-func (o *OrderDb) BatchCreateOrders(orders []*model.Order) error {
-	if len(orders) == 0 {
-		return errors.New("批量新增失败：订单列表为空")
-	}
-
-	// 调用Gen内置事务
-	err := o.GenQuery.Transaction(func(txQ *query.Query) error {
-		txOrderDb, err := NewTxOrderDb(txQ)
-		if err != nil {
-			return fmt.Errorf("创建事务版OrderDb失败：%v", err)
-		}
-
-		// 事务内批量插入
-		for idx, order := range orders {
-			// 严格校验（分单位）
-			if order.OrderNo == "" {
-				return fmt.Errorf("第%d个订单无效：订单号不能为空", idx+1)
-			}
-			if order.UserID <= 0 {
-				return fmt.Errorf("第%d个订单无效：用户ID必须大于0", idx+1)
-			}
-			if order.Amount <= 0 {
-				return fmt.Errorf("第%d个订单无效：金额（分）必须大于0", idx+1)
-			}
-
-			orderDo := txOrderDb.GenQuery.WithContext(context.Background()).Order
-			if err := orderDo.Create(order); err != nil {
-				if isDuplicateOrderNoErr(err) {
-					return fmt.Errorf("第%d个订单新增失败：订单号%s已存在", idx+1, order.OrderNo)
-				}
-				return fmt.Errorf("第%d个订单新增失败：%v（订单号=%s）", idx+1, err, order.OrderNo)
-			}
-		}
-		return nil // 无错误则提交事务
-	})
-
-	if err != nil {
-		return fmt.Errorf("批量新增订单失败：%v（事务已回滚）", err)
-	}
-	return nil
+// BatchCreateOrders 仅在调用方传入的事务中批量写入订单。
+func (o *OrderDb) BatchCreateOrders(ctx context.Context, orders []*model.Order) error {
+	orderQuery := o.GenQuery.Order
+	return orderQuery.WithContext(ctx).Create(orders...)
 }
 
-// --------------------------- 辅助方法 ---------------------------
+// GetByIDIncludingDeleted 仅供 CDC 读取最新状态，包含软删除记录。
+func (o *OrderDb) GetByIDIncludingDeleted(ctx context.Context, id int64) (*model.Order, error) {
+	q := o.GenQuery.Order
+	return q.WithContext(ctx).Unscoped().Where(q.ID.Eq(id)).First()
+}
 
-// isDuplicateOrderNoErr 判断是否是订单号唯一键冲突错误
-func isDuplicateOrderNoErr(err error) bool {
-	if err == nil {
-		return false
+// GetByIDsForUser 批量回查当前用户的有效订单，防止 ES 旧数据越权。
+func (o *OrderDb) GetByIDsForUser(ctx context.Context, userID int64, ids []int64) ([]*model.Order, error) {
+	if len(ids) == 0 {
+		return []*model.Order{}, nil
 	}
-	return errors.Is(err, gorm.ErrDuplicatedKey) ||
-		strings.Contains(strings.ToLower(err.Error()), "duplicate entry") &&
-			strings.Contains(strings.ToLower(err.Error()), "uk_order_no")
+	orderQuery := o.GenQuery.Order
+	return orderQuery.WithContext(ctx).Where(orderQuery.ID.In(ids...), orderQuery.UserID.Eq(userID)).Find()
+}
+
+func (o *OrderDb) GetByIDs(ctx context.Context, ids []int64) ([]*model.Order, error) {
+	if len(ids) == 0 {
+		return []*model.Order{}, nil
+	}
+	orderQuery := o.GenQuery.Order
+	return orderQuery.WithContext(ctx).Where(orderQuery.ID.In(ids...)).Find()
+}
+
+// GetByIDForUpdate 仅在事务内调用，锁住父订单以串行化支付、收货和发货。
+func (o *OrderDb) GetByIDForUpdate(ctx context.Context, id int64) (*model.Order, error) {
+	orderQuery := o.GenQuery.Order
+	return orderQuery.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Where(orderQuery.ID.Eq(id)).First()
 }

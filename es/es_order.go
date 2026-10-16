@@ -1,42 +1,47 @@
 package es
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
-	"fmt"
 	"go-framework-demo/es/es_model"
+	"go-framework-demo/util"
 )
 
-type orderSearchResponse struct {
-	Hits struct {
-		Hits []struct {
-			Source es_model.Order `json:"_source"`
-		} `json:"hits"`
-	} `json:"hits"`
+// GetOrderByID 按 ID 从 ES 读取文档。
+func GetOrderByID(id int64) (*es_model.Order, error) {
+	return GetOrderByIDContext(context.Background(), id)
 }
 
-// GetOrderByID 按订单 ID 从 ES 读取订单及其商品明细。
-func GetOrderByID(id int64) (*es_model.Order, error) {
-	result, err := SearchDocs(ES_ORDER, BuildOrderElasticQuery(OrderSearchOptions{ID: id}))
+// GetOrderByIDContext 使用请求上下文查询文档。
+func GetOrderByIDContext(ctx context.Context, id int64) (*es_model.Order, error) {
+	var order es_model.Order
+	searchOptions := OrderSearchOptions{
+		ID: &id,
+	}
+	source, err := BuildOrderElasticQuery(&searchOptions)
 	if err != nil {
 		return nil, err
 	}
-	b, err := json.Marshal(result)
-	if err != nil {
+	source.Sort("id", false)
+	if err := SearchOneContext(ctx, ES_ORDER, source, &order); err != nil {
 		return nil, err
 	}
-	var response orderSearchResponse
-	if err := json.Unmarshal(b, &response); err != nil {
-		return nil, err
+	items := make([]es_model.OrderItem, 0, len(order.Items))
+	for _, item := range order.Items {
+		if item.IsDel == 0 {
+			items = append(items, item)
+		}
 	}
-	if len(response.Hits.Hits) == 0 {
-		return nil, fmt.Errorf("订单不存在: %d", id)
-	}
-	return &response.Hits.Hits[0].Source, nil
+	order.Items = items
+	return &order, nil
 }
 
 // IndexOrder 将订单及其商品明细写入 order_test 索引。
 func IndexOrder(order *es_model.Order) (string, error) {
+	return IndexOrderContext(context.Background(), order)
+}
+
+func IndexOrderContext(ctx context.Context, order *es_model.Order) (string, error) {
 	if order == nil {
 		return "", errors.New("Order对象不能为空")
 	}
@@ -44,5 +49,17 @@ func IndexOrder(order *es_model.Order) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return IndexDoc(ES_ORDER, fmt.Sprintf("%d", order.ID), doc)
+	return IndexDocContext(ctx, ES_ORDER, util.IDString(order.ID), doc)
+}
+
+// UpdateOrder 更新订单及其商品明细 ES 文档。
+func UpdateOrder(order *es_model.Order) error {
+	if order == nil {
+		return errors.New("Order对象不能为空")
+	}
+	doc, err := order.ToMap()
+	if err != nil {
+		return err
+	}
+	return UpdateDoc(ES_ORDER, util.IDString(order.ID), doc)
 }

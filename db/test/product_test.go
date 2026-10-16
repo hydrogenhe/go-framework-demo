@@ -9,6 +9,7 @@ import (
 	"go-framework-demo/util"
 )
 
+// TestProductCreateAndGet 使用真实 MySQL，验证商品持久化、自动生成 ID 及查询结果。
 func TestProductCreateAndGet(t *testing.T) {
 	mysql.InitMySQL()
 	product := &model.Product{

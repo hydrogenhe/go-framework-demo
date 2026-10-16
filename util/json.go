@@ -2,7 +2,7 @@ package util
 
 import (
 	"fmt"
-	"log"
+	"go-framework-demo/logger"
 
 	"github.com/bytedance/sonic"
 )
@@ -16,7 +16,7 @@ func Marshal(v interface{}) ([]byte, error) {
 	data, err := sonic.Marshal(v)
 	if err != nil {
 		errMsg := fmt.Sprintf("JSON序列化失败: %v, 原始数据=%+v", err, v)
-		log.Printf("[JSON_UTIL_ERROR] %s", errMsg)
+		logger.Sugar.Infof("[JSON_UTIL_ERROR] %s", errMsg)
 		return nil, fmt.Errorf("%s", errMsg)
 	}
 	return data, nil
@@ -31,7 +31,7 @@ func Unmarshal(data []byte, v interface{}) error {
 	err := sonic.Unmarshal(data, v)
 	if err != nil {
 		errMsg := fmt.Sprintf("JSON反序列化失败: %v, JSON数据=%s", err, string(data))
-		log.Printf("[JSON_UTIL_ERROR] %s", errMsg)
+		logger.Sugar.Infof("[JSON_UTIL_ERROR] %s", errMsg)
 		return fmt.Errorf("%s", errMsg)
 	}
 	return nil
@@ -43,7 +43,7 @@ func MarshalIndent(v interface{}) (string, error) {
 	data, err := sonic.MarshalIndent(v, "", "  ")
 	if err != nil {
 		errMsg := fmt.Sprintf("JSON格式化失败: %v, 原始数据=%+v", err, v)
-		log.Printf("[JSON_UTIL_ERROR] %s", errMsg)
+		logger.Sugar.Infof("[JSON_UTIL_ERROR] %s", errMsg)
 		return "", fmt.Errorf("%s", errMsg)
 	}
 	return string(data), nil

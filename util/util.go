@@ -3,7 +3,7 @@ package util
 import (
 	"errors"
 	"fmt"
-	"log"
+	"go-framework-demo/logger"
 	"math/rand"
 	"time"
 )
@@ -71,10 +71,13 @@ func Retry(retryFunc func() error, maxRetries int, delay time.Duration) error {
 		}
 		// 不是最后一次重试，才延迟
 		if i < maxRetries-1 {
-			log.Printf("[WARN] 操作重试第%d次失败，%dms 后重试：%v", i+1, delay.Milliseconds(), err)
+			logger.Sugar.Infof("[WARN] 操作重试第%d次失败，%dms 后重试：%v", i+1, delay.Milliseconds(), err)
 			time.Sleep(delay)
 		}
 	}
 	// 所有重试都失败，返回最后一次的错误
 	return fmt.Errorf("重试%d次后仍失败：%w", maxRetries, err)
 }
+
+// RandomTestEmail 生成数字格式的 QQ 邮箱，供集成测试准备数据。
+func RandomTestEmail() string { value, _ := GenerateNum(18); return value + "@qq.com" }

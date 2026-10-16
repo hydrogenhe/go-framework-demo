@@ -1,0 +1,1891 @@
+components:
+    schemas:
+        AuthResponse:
+            properties:
+                age:
+                    type: integer
+                create_time:
+                    format: date-time
+                    type: string
+                email:
+                    type: string
+                id:
+                    example: "368670969125933056"
+                    type: string
+                name:
+                    type: string
+                role:
+                    enum:
+                        - user
+                        - admin
+                    type: string
+                token:
+                    example: 请使用登录接口返回的64字符token
+                    type: string
+                update_time:
+                    format: date-time
+                    type: string
+            type: object
+        CreateOrder:
+            properties:
+                items:
+                    items:
+                        $ref: '#/components/schemas/OrderItemInput'
+                    type: array
+                order_no:
+                    example: OD0123456789abcdef0123456
+                    maxLength: 25
+                    type: string
+                user_id:
+                    type: string
+            required:
+                - items
+                - order_no
+                - user_id
+            type: object
+        EmptyResp:
+            description: 操作成功，无额外业务字段
+            type: object
+        Error:
+            properties:
+                code:
+                    example: 40001
+                    type: integer
+                message:
+                    example: 请求参数格式不正确
+                    type: string
+            type: object
+        ImageResponse:
+            properties:
+                image:
+                    type: string
+            type: object
+        LogEntry:
+            properties:
+                fields:
+                    items:
+                        $ref: '#/components/schemas/LogField'
+                    type: array
+                level:
+                    type: string
+                line:
+                    type: integer
+                log_id:
+                    type: string
+                message:
+                    type: string
+                time:
+                    type: string
+            type: object
+        LogField:
+            properties:
+                key:
+                    type: string
+                label:
+                    type: string
+                value:
+                    type: string
+            type: object
+        LogQuery:
+            properties:
+                date:
+                    type: string
+                keyword:
+                    type: string
+                level:
+                    type: string
+                page:
+                    type: integer
+                page_size:
+                    type: integer
+            type: object
+        LogResult:
+            properties:
+                date:
+                    type: string
+                file:
+                    type: string
+                items:
+                    items:
+                        $ref: '#/components/schemas/LogEntry'
+                    type: array
+                keyword:
+                    type: string
+                level:
+                    type: string
+                page:
+                    type: integer
+                page_size:
+                    type: integer
+                total:
+                    type: integer
+            type: object
+        MetricView:
+            properties:
+                avg_ms:
+                    type: number
+                errors:
+                    type: integer
+                requests:
+                    type: integer
+                route:
+                    type: string
+            type: object
+        MetricsResponse:
+            properties:
+                routes:
+                    items:
+                        $ref: '#/components/schemas/MetricView'
+                    type: array
+            type: object
+        Order:
+            properties:
+                amount:
+                    type: integer
+                create_time:
+                    format: date-time
+                    type: string
+                expire_time:
+                    description: 待支付订单的支付截止时间，创建后10分钟
+                    format: date-time
+                    type: string
+                id:
+                    type: string
+                order_no:
+                    type: string
+                status:
+                    enum:
+                        - 1
+                        - 2
+                        - 3
+                        - 4
+                    type: integer
+                update_time:
+                    format: date-time
+                    type: string
+                user_id:
+                    type: string
+            type: object
+        OrderItem:
+            properties:
+                id:
+                    type: string
+                image:
+                    type: string
+                order_id:
+                    type: string
+                product_id:
+                    type: string
+                product_version:
+                    description: 下单时采用的商品资料版本；0表示历史数据未记录
+                    type: integer
+                product_name:
+                    type: string
+                quantity:
+                    type: integer
+                status:
+                    enum:
+                        - 1
+                        - 2
+                    type: integer
+                unit_price_fen:
+                    format: int64
+                    type: integer
+                update_time:
+                    format: date-time
+                    type: string
+            type: object
+        OrderItemInput:
+            properties:
+                image:
+                    type: string
+                name:
+                    type: string
+                product_id:
+                    type: string
+                product_version:
+                    description: 商品列表返回的版本号；版本已变化时下单会被拒绝
+                    minimum: 0
+                    type: integer
+                quantity:
+                    minimum: 1
+                    type: integer
+                stock:
+                    type: integer
+                unit_price_fen:
+                    minimum: 1
+                    type: integer
+            required:
+                - product_id
+                - quantity
+                - unit_price_fen
+            type: object
+        OrderListItem:
+            properties:
+                amount:
+                    description: 订单总金额，单位分
+                    format: int64
+                    type: integer
+                create_time:
+                    format: date-time
+                    type: string
+                expire_time:
+                    description: 待支付订单的支付截止时间，创建后10分钟
+                    format: date-time
+                    type: string
+                id:
+                    type: string
+                items:
+                    items:
+                        $ref: '#/components/schemas/OrderItem'
+                    type: array
+                order_no:
+                    type: string
+                status:
+                    enum:
+                        - 1
+                        - 2
+                        - 3
+                        - 4
+                    type: integer
+                user_id:
+                    type: string
+            type: object
+        OrderPage:
+            properties:
+                items:
+                    items:
+                        $ref: '#/components/schemas/OrderListItem'
+                    type: array
+                page:
+                    type: integer
+                page_size:
+                    type: integer
+                total:
+                    description: ES命中总数；同步延迟期间实际返回数量可能较少
+                    format: int64
+                    type: integer
+            type: object
+        Product:
+            properties:
+                create_time:
+                    format: date-time
+                    type: string
+                id:
+                    type: string
+                image:
+                    type: string
+                name:
+                    type: string
+                price:
+                    example: 1234
+                    type: integer
+                stock:
+                    type: integer
+                update_time:
+                    format: date-time
+                    type: string
+                version:
+                    description: 当前商品资料版本号
+                    type: integer
+            type: object
+        ProductPage:
+            properties:
+                items:
+                    items:
+                        $ref: '#/components/schemas/Product'
+                    type: array
+                page:
+                    type: integer
+                page_size:
+                    type: integer
+                total:
+                    type: integer
+            type: object
+        ProductUpdate:
+            properties:
+                image:
+                    nullable: true
+                    type: string
+                name:
+                    nullable: true
+                    type: string
+                price:
+                    maximum: 1e+08
+                    minimum: 1
+                    nullable: true
+                    type: integer
+                stock:
+                    maximum: 1e+06
+                    minimum: 0
+                    nullable: true
+                    type: integer
+            type: object
+        Response:
+            properties:
+                code:
+                    type: integer
+                data: {}
+                message:
+                    type: string
+            type: object
+        createUserRequest:
+            properties:
+                age:
+                    type: integer
+                email:
+                    type: string
+                name:
+                    type: string
+                password:
+                    type: string
+            type: object
+        loginRequest:
+            properties:
+                email:
+                    type: string
+                password:
+                    type: string
+            type: object
+        productRequest:
+            properties:
+                image:
+                    type: string
+                name:
+                    type: string
+                price:
+                    type: integer
+                stock:
+                    type: integer
+            type: object
+    securitySchemes:
+        BearerAuth:
+            description: 登录接口返回的token，有效期24小时
+            scheme: bearer
+            type: http
+info:
+    contact: {}
+    description: |-
+        业务接口使用 PUT；ID 使用字符串，金额单位为分。登录后将 Bearer token 填入 Authorization。部分更新的缺省/null 字段不修改，显式零值参与更新。错误返回 code/message；成功响应按各接口定义返回，不统一包裹。
+        JSON 接口统一返回 {code,message,data}，成功 code=0，data 由业务响应协议定义。ID 为十进制字符串；金额为整数分；时间为 RFC3339。HTTP 请求/响应定义位于 http_handler/http_msg。导出 Excel 和 Prometheus 文本除外。
+    title: Go Framework Demo API
+    version: "1.0"
+openapi: 3.0.3
+paths:
+    /api/admin/orders/list:
+        put:
+            parameters:
+                - description: 可选用户ID，不传则查询所有用户
+                  in: query
+                  name: user_id
+                  required: false
+                  schema:
+                    type: string
+                - description: 1待支付、2已支付、3已完成、4已取消；不传则查询全部状态
+                  in: query
+                  name: status
+                  schema:
+                    enum:
+                        - 1
+                        - 2
+                        - 3
+                    type: integer
+                - in: query
+                  name: sort
+                  schema:
+                    default: updated_desc
+                    enum:
+                        - updated_desc
+                        - updated_asc
+                        - price_asc
+                        - price_desc
+                    type: string
+                - description: 最低订单总金额（整数分），包含端点
+                  in: query
+                  name: price_min
+                  schema:
+                    format: int64
+                    minimum: 0
+                    type: integer
+                - description: 最高订单总金额（整数分），包含端点
+                  in: query
+                  name: price_max
+                  schema:
+                    format: int64
+                    minimum: 0
+                    type: integer
+                - description: 创建时间下限，带时区；ES 使用毫秒时间戳过滤
+                  in: query
+                  name: created_from
+                  schema:
+                    format: date-time
+                    type: string
+                - description: 创建时间上限，包含端点
+                  in: query
+                  name: created_to
+                  schema:
+                    format: date-time
+                    type: string
+                - in: query
+                  name: page
+                  schema:
+                    default: 1
+                    minimum: 1
+                    type: integer
+                - in: query
+                  name: page_size
+                  schema:
+                    default: 20
+                    maximum: 100
+                    minimum: 1
+                    type: integer
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/OrderPage'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录或会话失效（40101）
+                "403":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 需要管理员权限
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            security:
+                - BearerAuth: []
+            summary: 管理员分页查询全部用户订单（ES筛选ID，MySQL回查）
+            tags:
+                - 订单
+    /api/auth/login:
+        put:
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/loginRequest'
+                description: 邮箱与密码
+                required: true
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/AuthResponse'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录或会话失效（40101）
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            summary: 登录
+            tags:
+                - 认证
+    /api/auth/logout:
+        put:
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/EmptyResp'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: 注销成功
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录或会话失效（40101）
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            security:
+                - BearerAuth: []
+            summary: 退出登录
+            tags:
+                - 认证
+    /api/auth/session:
+        put:
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        type: object
+                                        required: [id, name, role]
+                                        properties:
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            role:
+                                                type: string
+                                                enum: [user, admin]
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: 会话有效
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录或会话失效（40101）
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            security:
+                - BearerAuth: []
+            summary: 校验当前登录会话
+            tags:
+                - 认证
+    /api/auth/register:
+        put:
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/createUserRequest'
+                description: 姓名、年龄、邮箱和6–18位密码
+                required: true
+            responses:
+                "201":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/AuthResponse'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: Created
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "409":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 邮箱或用户信息已存在
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            summary: 注册并登录
+            tags:
+                - 认证
+    /api/logs/query:
+        put:
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LogQuery'
+                description: 关键词、日期、级别和分页条件
+                required: true
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                allOf:
+                                    - $ref: '#/components/schemas/Response'
+                                    - properties:
+                                        data:
+                                            $ref: '#/components/schemas/LogResult'
+                                      type: object
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录或会话失效（40101）
+                "403":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 需要管理员权限（40301）
+                "404":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 日志文件不存在
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            security:
+                - BearerAuth: []
+            summary: 查询应用日志
+            tags:
+                - 运维
+    /api/metrics:
+        put:
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/MetricsResponse'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            summary: 查询接口指标摘要
+            tags:
+                - 运维
+    /api/orders:
+        put:
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateOrder'
+                description: 订单号最多25字符，user_id必须为当前用户。同一用户重试须复用 order_no 且提交相同商品内容；提交的商品版本必须仍是当前版本。重复请求返回原订单，不同内容返回409。
+                required: true
+            responses:
+                "201":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/Order'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: Created
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录或会话失效（40101）
+                "403":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 禁止替其他用户下单
+                "409":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 商品变化、库存不足或订单号冲突
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            security:
+                - BearerAuth: []
+            summary: 创建订单
+            tags:
+                - 订单
+    /api/orders/{id}/items/{item_id}/ship:
+        put:
+            description: 仅已支付订单可以发货，不改变父订单状态
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: item_id
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/OrderItem'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数无效
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录
+                "403":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 权限不足
+                "404":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 订单或明细不存在，或不属于当前用户/订单
+                "409":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 订单状态不允许此操作
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误
+            security:
+                - BearerAuth: []
+            summary: 管理员标记单条订单明细发货
+            tags:
+                - 订单
+    /api/orders/{id}/pay:
+        put:
+            description: 截止时间前将待支付订单改为已支付；超时或已取消订单不能支付，重复支付已支付订单幂等
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/Order'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数无效
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录
+                "403":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 权限不足
+                "404":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 订单或明细不存在，或不属于当前用户/订单
+                "409":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 订单状态不允许此操作
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误
+            security:
+                - BearerAuth: []
+            summary: 模拟支付当前用户的待支付订单
+            tags:
+                - 订单
+    /api/orders/{id}/receive:
+        put:
+            description: 已支付变为已完成，重复确认幂等
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/Order'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数无效
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录
+                "403":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 权限不足
+                "404":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 订单或明细不存在，或不属于当前用户/订单
+                "409":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 订单状态不允许此操作
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误
+            security:
+                - BearerAuth: []
+            summary: 确认收货
+            tags:
+                - 订单
+    /api/orders/{id}/ship:
+        put:
+            parameters:
+                - description: 订单ID
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/Order'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录或会话失效（40101）
+                "403":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 需要管理员权限（40301）
+                "404":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 订单不存在
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            security:
+                - BearerAuth: []
+            summary: 标记整单明细发货（不改变订单状态）
+            tags:
+                - 订单
+    /api/orders/list:
+        put:
+            parameters:
+                - description: 当前用户ID；管理员可查询其他用户
+                  in: query
+                  name: user_id
+                  required: true
+                  schema:
+                    type: string
+                - description: 1待支付、2已支付、3已完成、4已取消；不传则查询全部状态
+                  in: query
+                  name: status
+                  schema:
+                    enum:
+                        - 1
+                        - 2
+                        - 3
+                    type: integer
+                - in: query
+                  name: sort
+                  schema:
+                    default: updated_desc
+                    enum:
+                        - updated_desc
+                        - updated_asc
+                        - price_asc
+                        - price_desc
+                    type: string
+                - description: 最低订单总金额（整数分），包含端点
+                  in: query
+                  name: price_min
+                  schema:
+                    format: int64
+                    minimum: 0
+                    type: integer
+                - description: 最高订单总金额（整数分），包含端点
+                  in: query
+                  name: price_max
+                  schema:
+                    format: int64
+                    minimum: 0
+                    type: integer
+                - description: 创建时间下限，带时区；ES 使用毫秒时间戳过滤
+                  in: query
+                  name: created_from
+                  schema:
+                    format: date-time
+                    type: string
+                - description: 创建时间上限，包含端点
+                  in: query
+                  name: created_to
+                  schema:
+                    format: date-time
+                    type: string
+                - in: query
+                  name: page
+                  schema:
+                    default: 1
+                    minimum: 1
+                    type: integer
+                - in: query
+                  name: page_size
+                  schema:
+                    default: 20
+                    maximum: 100
+                    minimum: 1
+                    type: integer
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/OrderPage'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录或会话失效（40101）
+                "403":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 无权查询其他用户
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            security:
+                - BearerAuth: []
+            summary: 分页筛选用户订单（ES检索ID，MySQL批量返回详情）
+            tags:
+                - 订单
+    /api/products:
+        put:
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/productRequest'
+                description: 商品信息，价格为分；创建时生成商品资料版本1
+                required: true
+            responses:
+                "201":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/Product'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: Created
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录或会话失效（40101）
+                "403":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 需要管理员权限（40301）
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            security:
+                - BearerAuth: []
+            summary: 创建商品
+            tags:
+                - 商品
+    /api/products/{id}:
+        put:
+            description: 仅修改传入的非null字段；名称、价格、图片变化会生成新版本，库存单独保存在商品主体上；stock为0更新为零。拒绝未知字段。
+            parameters:
+                - description: 商品ID
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ProductUpdate'
+                description: 至少一个更新字段
+                required: true
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/Product'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录或会话失效（40101）
+                "403":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 需要管理员权限（40301）
+                "404":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 商品不存在
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            security:
+                - BearerAuth: []
+            summary: 修改商品
+            tags:
+                - 商品
+    /api/products/export:
+        put:
+            description: 导出全部匹配商品，ES分批检索ID后回查MySQL；不受列表分页窗口限制。
+            parameters:
+                - description: 商品名称
+                  in: query
+                  name: name
+                  schema:
+                    type: string
+                - description: 更新时间排序，默认倒序
+                  in: query
+                  name: sort
+                  schema:
+                    default: updated_desc
+                    enum:
+                        - updated_desc
+                        - updated_asc
+                    type: string
+                - description: 最低价格（分）
+                  in: query
+                  name: price_min
+                  schema:
+                    type: integer
+                - description: 最高价格（分）
+                  in: query
+                  name: price_max
+                  schema:
+                    type: integer
+                - description: 最小库存
+                  in: query
+                  name: stock_min
+                  schema:
+                    type: integer
+                - description: 最大库存
+                  in: query
+                  name: stock_max
+                  schema:
+                    type: integer
+                - description: 开始时间，RFC3339含时区
+                  in: query
+                  name: created_from
+                  schema:
+                    type: string
+                - description: 结束时间，RFC3339含时区
+                  in: query
+                  name: created_to
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+                            schema:
+                                format: binary
+                                type: string
+                    description: Excel文件
+                    headers:
+                        Content-Disposition:
+                            description: 附件文件名
+                            schema:
+                                type: string
+                        X-Export-Count:
+                            description: 导出条数
+                            schema:
+                                type: integer
+                "400":
+                    content:
+                        application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "401":
+                    content:
+                        application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录或会话失效（40101）
+                "403":
+                    content:
+                        application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 需要管理员权限（40301）
+                "500":
+                    content:
+                        application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            security:
+                - BearerAuth: []
+            summary: 导出商品Excel
+            tags:
+                - 商品
+    /api/products/image:
+        put:
+            description: 仅一张JPEG/PNG图片，最多5MB；返回地址后再调用商品创建或更新接口保存。
+            requestBody:
+                content:
+                    multipart/form-data:
+                        schema:
+                            properties:
+                                file:
+                                    format: binary
+                                    type: string
+                            required:
+                                - file
+                            type: object
+                required: true
+            responses:
+                "201":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/ImageResponse'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: Created
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录或会话失效（40101）
+                "403":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 需要管理员权限（40301）
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            security:
+                - BearerAuth: []
+            summary: 上传商品图片
+            tags:
+                - 商品
+    /api/products/{id}/detail:
+        put:
+            security:
+                - BearerAuth: []
+            description: 查询商品详情，先读取 Redis 缓存；缓存未命中或不可用时回源 MySQL，并在成功后尝试回填缓存。
+            parameters:
+                - description: 商品ID
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "401":
+                    description: 未登录或会话失效（40101）
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/Product'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: 商品详情
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 商品ID格式错误
+                "404":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 商品不存在
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误
+            summary: 查询商品详情
+            tags:
+                - 商品
+    /api/products/list:
+        put:
+            security:
+                - BearerAuth: []
+            description: ES筛选ID后批量回查MySQL最新详情；按ES顺序返回，命中总数来自ES。
+            parameters:
+                - description: 商品名称
+                  in: query
+                  name: name
+                  schema:
+                    type: string
+                - description: 最低价格（分）
+                  in: query
+                  name: price_min
+                  schema:
+                    type: integer
+                - description: 最高价格（分）
+                  in: query
+                  name: price_max
+                  schema:
+                    type: integer
+                - description: 最小库存
+                  in: query
+                  name: stock_min
+                  schema:
+                    type: integer
+                - description: 最大库存
+                  in: query
+                  name: stock_max
+                  schema:
+                    type: integer
+                - description: 开始时间，RFC3339含时区
+                  in: query
+                  name: created_from
+                  schema:
+                    type: string
+                - description: 结束时间，RFC3339含时区
+                  in: query
+                  name: created_to
+                  schema:
+                    type: string
+                - description: 页码
+                  in: query
+                  name: page
+                  schema:
+                    default: 1
+                    minimum: 1
+                    type: integer
+                - description: 每页条数，总分页窗口不超过10000
+                  in: query
+                  name: page_size
+                  schema:
+                    default: 20
+                    maximum: 100
+                    minimum: 1
+                    type: integer
+            responses:
+                "401":
+                    description: 未登录或会话失效（40101）
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/ProductPage'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            summary: 查询商品列表
+            tags:
+                - 商品
+    /metrics:
+        get:
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        type: string
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                        text/plain:
+                            schema:
+                                type: string
+                    description: Prometheus文本指标
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                        text/plain:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                        text/plain:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            summary: Prometheus指标
+            tags:
+                - 运维
+    /api/orders/{id}/items/{item_id}/snapshot:
+        put:
+            description: 普通用户仅可读取自己的订单，管理员可查看全部订单。名称、图片、成交单价和版本均来自 MySQL 订单明细；不读取当前商品或缓存。
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+                - in: path
+                  name: item_id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "404":
+                    description: 订单不存在、无权查看或明细不属于该订单
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        $ref: '#/components/schemas/OrderItem'
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: 订单明细中持久化的商品快照，商品后续修改或下架不影响结果
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录或会话失效（40101）
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            security:
+                - BearerAuth: []
+            summary: 查询订单商品快照
+            tags:
+                - 订单
+
+    /api/admin/orders/{id}/user:
+        put:
+            description: 管理员查询指定订单所属用户的最新名字和邮箱，仅返回id、name、email，不返回密码或token。
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "403":
+                    description: 仅管理员可访问
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                "404":
+                    description: 订单或用户不存在或已删除
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                properties:
+                                    code:
+                                        enum:
+                                            - 0
+                                        type: integer
+                                    data:
+                                        type: object
+                                        required: [id, name, email]
+                                        properties:
+                                            id:
+                                                type: string
+                                            name:
+                                                type: string
+                                            email:
+                                                type: string
+                                    message:
+                                        example: success
+                                        type: string
+                                required:
+                                    - code
+                                    - message
+                                    - data
+                                type: object
+                    description: 用户名字和邮箱，取自MySQL当前资料
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 参数错误（40001）
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 未登录或会话失效（40101）
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: 内部错误（50001），不暴露底层原因
+            security:
+                - BearerAuth: []
+            summary: 查询订单用户详情（仅管理员）
+            tags:
+                - 认证
+servers:
+    - description: 本地后端
+      url: http://localhost:8080
+

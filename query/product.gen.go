@@ -32,6 +32,11 @@ func newProduct(db *gorm.DB, opts ...gen.DOOption) product {
 	_product.Name = field.NewString(tableName, "name")
 	_product.Price = field.NewInt64(tableName, "price")
 	_product.Stock = field.NewInt32(tableName, "stock")
+	_product.Image = field.NewString(tableName, "image")
+	_product.CreateTime = field.NewTime(tableName, "create_time")
+	_product.IsDel = field.NewField(tableName, "is_del")
+	_product.UpdateTime = field.NewTime(tableName, "update_time")
+	_product.CurrentVersion = field.NewInt32(tableName, "current_version")
 
 	_product.fillFieldMap()
 
@@ -41,11 +46,16 @@ func newProduct(db *gorm.DB, opts ...gen.DOOption) product {
 type product struct {
 	productDo productDo
 
-	ALL   field.Asterisk
-	ID    field.Int64
-	Name  field.String // 商品名称
-	Price field.Int64  // 商品价格（单位：分）
-	Stock field.Int32  // 库存
+	ALL            field.Asterisk
+	ID             field.Int64
+	Name           field.String // 商品名称
+	Price          field.Int64  // 商品价格（单位：分）
+	Stock          field.Int32  // 库存
+	Image          field.String
+	CreateTime     field.Time  // 创建时间
+	IsDel          field.Field // 软删除：0正常，1已删除
+	UpdateTime     field.Time  // 更新时间
+	CurrentVersion field.Int32 // 当前商品资料版本
 
 	fieldMap map[string]field.Expr
 }
@@ -66,6 +76,11 @@ func (p *product) updateTableName(table string) *product {
 	p.Name = field.NewString(table, "name")
 	p.Price = field.NewInt64(table, "price")
 	p.Stock = field.NewInt32(table, "stock")
+	p.Image = field.NewString(table, "image")
+	p.CreateTime = field.NewTime(table, "create_time")
+	p.IsDel = field.NewField(table, "is_del")
+	p.UpdateTime = field.NewTime(table, "update_time")
+	p.CurrentVersion = field.NewInt32(table, "current_version")
 
 	p.fillFieldMap()
 
@@ -90,11 +105,16 @@ func (p *product) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (p *product) fillFieldMap() {
-	p.fieldMap = make(map[string]field.Expr, 4)
+	p.fieldMap = make(map[string]field.Expr, 9)
 	p.fieldMap["id"] = p.ID
 	p.fieldMap["name"] = p.Name
 	p.fieldMap["price"] = p.Price
 	p.fieldMap["stock"] = p.Stock
+	p.fieldMap["image"] = p.Image
+	p.fieldMap["create_time"] = p.CreateTime
+	p.fieldMap["is_del"] = p.IsDel
+	p.fieldMap["update_time"] = p.UpdateTime
+	p.fieldMap["current_version"] = p.CurrentVersion
 }
 
 func (p product) clone(db *gorm.DB) product {

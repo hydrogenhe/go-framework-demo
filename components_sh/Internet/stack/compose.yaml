@@ -1,0 +1,149 @@
+name: go-framework-demo
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?run start_set_all.sh first}
+      MYSQL_DATABASE: demo_db
+      MYSQL_USER: demo_app
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?run start_set_all.sh first}
+      CANAL_PASSWORD: ${CANAL_PASSWORD:?run start_set_all.sh first}
+    command: ["--server-id=1", "--log-bin=mysql-bin", "--binlog-format=ROW", "--binlog-row-image=FULL"]
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    mem_limit: 512m
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?run start_set_all.sh first}", "--maxmemory", "96mb", "--maxmemory-policy", "volatile-lru"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping 2>/dev/null | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 128m
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.26
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms384m -Xmx384m
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9200/_cluster/health >/dev/null"]
+      interval: 20s
+      timeout: 10s
+      retries: 20
+    mem_limit: 800m
+
+  rocketmq-namesrv:
+    image: apache/rocketmq:4.9.7
+    restart: unless-stopped
+    command: ["sh", "mqnamesrv"]
+    environment:
+      JAVA_OPT_EXT: -Xms96m -Xmx128m -Xmn48m
+    mem_limit: 192m
+
+  rocketmq-broker:
+    image: apache/rocketmq:4.9.7
+    restart: unless-stopped
+    depends_on:
+      - rocketmq-namesrv
+    command: ["sh", "mqbroker", "-n", "rocketmq-namesrv:9876", "-c", "/home/rocketmq/rocketmq-4.9.7/conf/broker.conf"]
+    environment:
+      JAVA_OPT_EXT: -Xms192m -Xmx256m -Xmn96m
+    volumes:
+      - ./rocketmq/broker.conf:/home/rocketmq/rocketmq-4.9.7/conf/broker.conf:ro
+      - rocketmq-data:/home/rocketmq/store
+    mem_limit: 384m
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.48
+    restart: unless-stopped
+    command: ["mini", "-dir=/data", "-ip=seaweedfs", "-ip.bind=0.0.0.0"]
+    environment:
+      AWS_ACCESS_KEY_ID: ${IMAGE_ACCESS_KEY:?run start_set_all.sh first}
+      AWS_SECRET_ACCESS_KEY: ${IMAGE_SECRET_KEY:?run start_set_all.sh first}
+      S3_BUCKET: product-images
+    volumes:
+      - seaweedfs-data:/data
+    ports:
+      - "8888:8888"
+    mem_limit: 192m
+
+  canal:
+    image: canal/canal-server:v1.1.8
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      JAVA_OPTS: -Xms192m -Xmx256m
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rocketmq-broker:
+        condition: service_started
+    volumes:
+      - ../../../component/canal/canal_conf:/home/admin/canal-server/conf
+    mem_limit: 384m
+
+  go:
+    profiles: [app]
+    build:
+      context: ../../..
+      dockerfile: components_sh/Internet/stack/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      rocketmq-broker:
+        condition: service_started
+      seaweedfs:
+        condition: service_started
+    volumes:
+      - ../../../conf:/app/conf:ro
+      - ../../../logs:/app/logs
+    ports:
+      - "8080:8080"
+    mem_limit: 256m
+
+  frontend:
+    profiles: [app]
+    build:
+      context: ../../..
+      dockerfile: components_sh/Internet/stack/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - go
+    entrypoint: ["/app/frontend-server"]
+    volumes:
+      - ../../../conf:/app/conf:ro
+    ports:
+      - "5500:5500"
+    mem_limit: 64m
+
+volumes:
+  mysql-data:
+  redis-data:
+  elasticsearch-data:
+  rocketmq-data:
+  seaweedfs-data:

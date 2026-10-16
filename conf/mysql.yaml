@@ -1,0 +1,8 @@
+# MySQL 连接配置。上云前请填写云数据库地址及专用账号密码。
+mysql:
+  host: 127.0.0.1
+  port: "3306"
+  user: root
+  password: "12345678"
+  database: demo_db
+  charset: utf8mb4
